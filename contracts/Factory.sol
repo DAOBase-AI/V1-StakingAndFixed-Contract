@@ -4,24 +4,24 @@ pragma solidity ^0.8.4;
 import "./interfaces/IAlphaDeployer.sol";
 import "./interfaces/IBetaDeployer.sol";
 import "./interfaces/IGammaDeployer.sol";
-import "./interfaces/IDeltaDeployer.sol";
+//import "./interfaces/IDeltaDeployer.sol";
 
 contract Factory {
     address private alphaDeployer;
     address private betaDeployer;
     address private gammaDeployer;
-    address private deltaDeployer;
+//    address private deltaDeployer;
 
     constructor(
         address _alphaDeployer,
         address _betaDeployer,
         address _gammaDeployer,
-        address _deltaDeployer
+//        address _deltaDeployer
     ) {
         alphaDeployer = _alphaDeployer;
         betaDeployer = _betaDeployer;
         gammaDeployer = _gammaDeployer;
-        deltaDeployer = _deltaDeployer;
+//        deltaDeployer = _deltaDeployer;
     }
 
     event AlphaDeploy(
@@ -46,8 +46,10 @@ contract Factory {
         string _symbol,
         address _erc20,
         uint256 _rate
+        uint256 _maxSupply
+
     );
-    event DeltaDeploy(
+/*    event DeltaDeploy(
         address indexed _addr,
         uint256 indexed id,
         string _name,
@@ -59,7 +61,7 @@ contract Factory {
         address _incentiveAddress,
         uint256 _amount
     );
-
+*/
     function alphaDeploy(
         uint256 _id,
         string memory _name,
@@ -89,13 +91,14 @@ contract Factory {
         string memory _symbol,
         address _erc20,
         uint256 _rate
+        uint256 _maxSupply
     ) public payable {
         IGammaDeployer factory = IGammaDeployer(gammaDeployer);
-        address addr = factory.deployGamma(_name, _symbol, _erc20, _rate);
-        emit GamaDeploy(addr, _id, _name, _symbol, _erc20, _rate);
+        address addr = factory.deployGamma(_name, _symbol, _erc20, _rate, _maxSupply);
+        emit GamaDeploy(addr, _id, _name, _symbol, _erc20, _rate, maxSupply);
     }
 
-    function deltaDeploy(
+/*    function deltaDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
@@ -131,3 +134,4 @@ contract Factory {
         );
     }
 }
+*/
