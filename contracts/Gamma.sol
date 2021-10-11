@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+// 需要修改合约增加总量的限制，去除mint限制
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
 contract Gamma is Context, ERC721 {
     using Counters for Counters.Counter;
@@ -17,20 +17,20 @@ contract Gamma is Context, ERC721 {
     address public erc20;   // erc20 token used to purchase PASS
     uint256 public rate;    // price rate of erc20 tokens/PASS
 
-    // PASS number counters. For erc721 contract, PASS number = token id
+    // token id counters. For erc721 contract, PASS number = token id
     Counters.Counter private tokenIdTracker = Counters.Counter({
         _value: 1
     });
-    mapping(address => uint256) private holders;
+    mapping(address => uint256) private holders;    // check if user minted PASS to limit that each address can only mint one PASS in the contract
 
     constructor(string memory _name, string memory _symbol, address _erc20, uint256 _rate) ERC721(_name, _symbol) {
-        owner = tx.origin;      // the creator of DAO will be the owner of PASS contract
+        owner = tx.origin;      // the creator of DAO will be the owner/admin of PASS contract
         erc20 = _erc20;         
         rate = _rate;
     }
     // user buy PASS from contract with specific erc20 tokens
     function mint() public returns (uint256 tokenId) {
-        require(holders[_msgSender()] == 0, "error: each user can only hold one PASS");   // each user can only hold one PASS in this contract
+        require(holders[_msgSender()] == 0, "error: each user can only mint once");   // each user can only mint once in this contract
 
         tokenId = tokenIdTracker.current();                             // accumulate the token id
         IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  // send erc20 tokens from user to contract
