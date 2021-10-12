@@ -10,20 +10,20 @@ async function main() {
   const AlphaDeployer = await hre.ethers.getContractFactory("AlphaDeployer");
   const BetaDeployer = await hre.ethers.getContractFactory("BetaDeployer");
   const GammaDeployer = await hre.ethers.getContractFactory("GammaDeployer");
-  const DeltaDeployer = await hre.ethers.getContractFactory("DeltaDeployer");
+  // const DeltaDeployer = await hre.ethers.getContractFactory("DeltaDeployer");
 
   const alphaDeployer = await AlphaDeployer.deploy();
   const betaDeployer = await BetaDeployer.deploy();
   const gammaDeployer = await GammaDeployer.deploy();
-  const deltaDeployer = await DeltaDeployer.deploy();
+  // const deltaDeployer = await DeltaDeployer.deploy();
 
   // Deploy MegaFactory
   const MegaFactory = await hre.ethers.getContractFactory("Factory");
   const megaFactory = await MegaFactory.deploy(
     alphaDeployer.address, 
     betaDeployer.address, 
-    gammaDeployer.address, 
-    deltaDeployer.address
+    gammaDeployer.address
+    // deltaDeployer.address
   );
 
   await megaFactory.deployed();

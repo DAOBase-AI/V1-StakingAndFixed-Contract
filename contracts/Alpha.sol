@@ -41,7 +41,7 @@ contract Alpha is Context, ERC721 {
     // 需要解除holder的限制，不需要限制只有某个PASS的原始拥有者才能销毁。
     function burn(uint256 tokenId) public {
 //        require(tokenId != 0 && tokenId == holders[_msgSender()], "error: sender is not holder");   
-        require(tokenId != 0, "error: token id cannot be zero");
+        require(tokenId != 0, "Error: token id cannot be zero");
 //        delete holders[_msgSender()];
         _burn(tokenId);
         IERC20(erc20).transfer(_msgSender(), rate);

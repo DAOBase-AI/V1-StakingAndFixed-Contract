@@ -14,7 +14,7 @@ contract Beta is Context, ERC721 {
     event Burn(address indexed from, uint256 indexed tokenId);
 
     address public erc721;      // creator's NFT address
-    mapping (address => uint256) private vault;     // associate the PASS id with staked NFT token id
+    mapping (uint256 => uint256) private vault;     // associate the PASS id with staked NFT token id
     // token id counter. For erc721 contract, PASS serial number = token id
     Counters.Counter private tokenIdTracker = Counters.Counter({
         _value: 1

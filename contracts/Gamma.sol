@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 // 需要修改合约增加总量的限制，去除mint限制
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
 contract Gamma is Context, ERC721 {
@@ -32,7 +33,7 @@ contract Gamma is Context, ERC721 {
     // user buy PASS from contract with specific erc20 tokens
     function mint() public returns (uint256 tokenId) {
 //        require(holders[_msgSender()] == 0, "error: each user can only mint once");   // each user can only mint once in this contract
-        require((tokenIdTracker.current() <= maxSupply), "error: exceeds maximum supply")
+        require((tokenIdTracker.current() <= maxSupply), "Error: exceeds maximum supply");
         tokenId = tokenIdTracker.current();                             // accumulate the token id
         IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  // send erc20 tokens from user to contract
         _safeMint(_msgSender(), tokenId);                               // mint PASS to user address
@@ -44,7 +45,7 @@ contract Gamma is Context, ERC721 {
     }
     // contract owner/admin withdraw erc20 tokens from contract
     function withdraw() public {
-        require(owner == _msgSender(), "error: must have admin role");  // only contract owner/admin can withdraw reserve of erc20 tokens
+        require(owner == _msgSender(), "Error: must have admin role");  // only contract owner/admin can withdraw reserve of erc20 tokens
         uint256 amount = IERC20(erc20).balanceOf(address(this));        // get the amount of erc20 tokens reserved in contract
         IERC20(erc20).transfer(_msgSender(), amount);                   // transfer erc20 tokens to contract owner address
 

@@ -15,7 +15,7 @@ contract Factory {
     constructor(
         address _alphaDeployer,
         address _betaDeployer,
-        address _gammaDeployer,
+        address _gammaDeployer
 //        address _deltaDeployer
     ) {
         alphaDeployer = _alphaDeployer;
@@ -45,7 +45,7 @@ contract Factory {
         string _name,
         string _symbol,
         address _erc20,
-        uint256 _rate
+        uint256 _rate,
         uint256 _maxSupply
 
     );
@@ -90,12 +90,12 @@ contract Factory {
         string memory _name,
         string memory _symbol,
         address _erc20,
-        uint256 _rate
+        uint256 _rate,
         uint256 _maxSupply
     ) public payable {
         IGammaDeployer factory = IGammaDeployer(gammaDeployer);
         address addr = factory.deployGamma(_name, _symbol, _erc20, _rate, _maxSupply);
-        emit GamaDeploy(addr, _id, _name, _symbol, _erc20, _rate, maxSupply);
+        emit GamaDeploy(addr, _id, _name, _symbol, _erc20, _rate, _maxSupply);
     }
 
 /*    function deltaDeploy(
@@ -133,5 +133,5 @@ contract Factory {
             _amount
         );
     }
+    */
 }
-*/
