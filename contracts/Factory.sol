@@ -29,6 +29,7 @@ contract Factory {
         uint256 indexed id,
         string _name,
         string _symbol,
+        string _bURI,
         address _erc20,
         uint256 _rate
     );
@@ -37,6 +38,7 @@ contract Factory {
         uint256 indexed id,
         string _name,
         string _symbol,
+        string _bURI,
         address _erc721
     );
     event GamaDeploy(
@@ -44,6 +46,7 @@ contract Factory {
         uint256 indexed id,
         string _name,
         string _symbol,
+        string _bURI,
         address _erc20,
         uint256 _rate,
         uint256 _maxSupply
@@ -66,36 +69,39 @@ contract Factory {
         uint256 _id,
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc20,
         uint256 _rate
     ) public payable {
         IAlphaDeployer factory = IAlphaDeployer(alphaDeployer);
-        address addr = factory.deployAlpha(_name, _symbol, _erc20, _rate);
-        emit AlphaDeploy(addr, _id, _name, _symbol, _erc20, _rate);
+        address addr = factory.deployAlpha(_name, _symbol, _bURI, _erc20, _rate);
+        emit AlphaDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
     }
 
     function betaDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc721
     ) public payable {
         IBetaDeployer factory = IBetaDeployer(betaDeployer);
-        address addr = factory.deployBeta(_name, _symbol, _erc721);
-        emit BetaDeploy(addr, _id, _name, _symbol, _erc721);
+        address addr = factory.deployBeta(_name, _symbol, _bURI, _erc721);
+        emit BetaDeploy(addr, _id, _name, _symbol, _bURI, _erc721);
     }
 
     function gammaDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc20,
         uint256 _rate,
         uint256 _maxSupply
     ) public payable {
         IGammaDeployer factory = IGammaDeployer(gammaDeployer);
-        address addr = factory.deployGamma(_name, _symbol, _erc20, _rate, _maxSupply);
-        emit GamaDeploy(addr, _id, _name, _symbol, _erc20, _rate, _maxSupply);
+        address addr = factory.deployGamma(_name, _symbol, _bURI, _erc20, _rate, _maxSupply);
+        emit GamaDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate, _maxSupply);
     }
 
 /*    function deltaDeploy(

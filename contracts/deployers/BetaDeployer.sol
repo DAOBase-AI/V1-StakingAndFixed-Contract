@@ -7,9 +7,10 @@ contract BetaDeployer {
     function deployBeta(
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc721
     ) public returns (address) {
-        address addr = address(new Beta(_name, _symbol, _erc721));
+        address addr = address(new Beta(_name, _symbol, _bURI, _erc721));
         return addr;
     }
 }
