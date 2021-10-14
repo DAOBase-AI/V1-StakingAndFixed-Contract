@@ -35,7 +35,11 @@ contract Gamma is Context, ERC721 {
 //        require(holders[_msgSender()] == 0, "error: each user can only mint once");   // each user can only mint once in this contract
         require((tokenIdTracker.current() <= maxSupply), "Error: exceeds maximum supply");
         tokenId = tokenIdTracker.current();                             // accumulate the token id
-        IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  // send erc20 tokens from user to contract
+
+        // IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  // send erc20 tokens from user to contract
+        bool success = IERC20(erc20).transferFrom(_msgSender(), address(this), rate);
+        require(success, "Transfer failed.");
+
         _safeMint(_msgSender(), tokenId);                               // mint PASS to user address
 //        holders[_msgSender()] = tokenId;                                // associate the user address with token id
 

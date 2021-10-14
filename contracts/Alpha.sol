@@ -30,7 +30,10 @@ contract Alpha is Context, ERC721 {
 //        require(holders[_msgSender()] == 0, "error: sender has been holder");   
 
         tokenId = tokenIdTracker.current();                             // accumulate the token id
-        IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  // user stake erc20 tokens into contract
+        // IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  // user stake erc20 tokens into contract
+        bool success = IERC20(erc20).transferFrom(_msgSender(), address(this), rate);
+        require(success, "Transfer failed.");
+
         _safeMint(_msgSender(), tokenId);                               // mint PASS to user address
 //        holders[_msgSender()] = tokenId;                                // associate the user address with token id 
 

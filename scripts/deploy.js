@@ -17,6 +17,10 @@ async function main() {
   const gammaDeployer = await GammaDeployer.deploy();
   // const deltaDeployer = await DeltaDeployer.deploy();
 
+  console.log("Alpha address: " + alphaDeployer.address);
+  console.log("Beta address: " + betaDeployer.address);
+  console.log("Gamma address: " + gammaDeployer.address);
+
   // Deploy MegaFactory
   const MegaFactory = await hre.ethers.getContractFactory("Factory");
   const megaFactory = await MegaFactory.deploy(
@@ -25,8 +29,8 @@ async function main() {
     gammaDeployer.address
     // deltaDeployer.address
   );
-
-  await megaFactory.deployed();
+  await megaFactory.deployed();  
+  console.log("Factory address: " + megaFactory.address);
 
   console.log("Factories on set.");
 }

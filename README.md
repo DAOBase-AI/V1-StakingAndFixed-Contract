@@ -40,3 +40,38 @@ Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_
 ```shell
 npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
 ```
+
+
+# Rinkeby
+
+## Deploy&verify
+npx hardhat run scripts/deploy.js --network rinkeby
+npx hardhat verify --network rinkeby 0xdA892F285fCeCFe06137055323873C6b60813E91 0xcC575Ed9213616d6E83425D509E60109e108f77F 0xc8479AFC3C150ecc51Ba3Db2B34703d6160B53Fa 0x217AE87E1BaA45636443Dbbbc41c0F4712aFD838
+npx hardhat verify --network rinkeby 0xcC575Ed9213616d6E83425D509E60109e108f77F
+npx hardhat verify --network rinkeby 0xc8479AFC3C150ecc51Ba3Db2B34703d6160B53Fa
+npx hardhat verify --network rinkeby 0x217AE87E1BaA45636443Dbbbc41c0F4712aFD838
+
+## Verify Qinshun(Please use Qinshun's PRIVATE_KEY)
+npx hardhat verify --network rinkeby 0x0689bc670f7110b78645e0c9ebadbc2258d8ae7f "test pass" PASS 0x0ccc24a6b8285468bb7aba8e86b090b7e6d44219 5
+npx hardhat verify --network rinkeby 0xb4463dc27a17866a250e7b59c08cd926930a2466 "beta test" betat 0x5ed46ff8b506c36e2e7e767ed9b45c51ed910dab
+npx hardhat verify --network rinkeby 0xbed985de730750e6e59fe25080da1d666f7b03a7 3gamma1 3g1 0x0ccc24a6b8285468bb7aba8e86b090b7e6d44219 3000000000000000000 10000000000000000000
+
+## Deploy&verify ERC20&721
+npx hardhat run scripts/deployMine.js --network rinkeby
+
+npx hardhat verify --network rinkeby 0xaF6cdDcCA19cc04954FaC72Dd5ddc4de46B10F0C my20Token MY20
+npx hardhat verify --network rinkeby --contract contracts/MyERC721Token.sol:MyERC721Token 0x5Ed46Ff8B506C36e2E7e767eD9b45C51Ed910dAB my721Token MY721 "ipfs://"
+
+# Polygon
+npx hardhat run scripts/deploy.js --network polygon
+npx hardhat verify --network polygon 0x754019Eee371a26CC29A3B5F2c8A21e014b13042 0xeC38c1320bFe708B8C2F443579D3E58D10081806 0x8ce2bb600D965F52C722Ea8AA357d5e649fB20E6 0xB21c70b62c15f2BEFAaaE5091Ac83a8B42a4beBf
+npx hardhat verify --network polygon 0xeC38c1320bFe708B8C2F443579D3E58D10081806
+npx hardhat verify --network polygon 0x8ce2bb600D965F52C722Ea8AA357d5e649fB20E6
+npx hardhat verify --network polygon 0xB21c70b62c15f2BEFAaaE5091Ac83a8B42a4beBf
+
+# Polygon Mumbai
+npx hardhat run scripts/deploy.js --network polygonMumbai
+npx hardhat verify --network polygonMumbai
+npx hardhat verify --network polygonMumbai  
+npx hardhat verify --network polygonMumbai  
+npx hardhat verify --network polygonMumbai  
