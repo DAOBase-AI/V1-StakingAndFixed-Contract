@@ -77,7 +77,8 @@ contract TokenBase is Context, ERC721, Ownable {
     function mint() public returns (uint256 tokenId) { 
         tokenId = tokenIdTracker.current();                                // accumulate the token id
 
-        bool success = IERC20(erc20).transferFrom(_msgSender(), address(this), rate);
+        bool success = IERC20(erc20).transferFrom(_msgSender(), address(this), rate);  
+        // in case old contract only return false when transfer fails
         require(success, "ERC20: transfer failed.");
 
         _safeMint(_msgSender(), tokenId);                                 // mint PASS to user address
