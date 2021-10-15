@@ -1,143 +1,80 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./interfaces/IAlphaDeployer.sol";
-import "./interfaces/IBetaDeployer.sol";
-import "./interfaces/IGammaDeployer.sol";
-//import "./interfaces/IDeltaDeployer.sol";
+import "./interfaces/ITokenBaseDeployer.sol";
+import "./interfaces/INFTBaseDeployer.sol";
+import "./interfaces/IFixedPriceDeployer.sol";
 
 contract Factory {
-    address private alphaDeployer;
-    address private betaDeployer;
-    address private gammaDeployer;
-//    address private deltaDeployer;
+    address private tokenBaseDeployer;
+    address private nftBaseDeployer;
+    address private fixedPriceDeployer;
 
     constructor(
-        address _alphaDeployer,
-        address _betaDeployer,
-        address _gammaDeployer
-//        address _deltaDeployer
+        address _tokenBaseDeployer,
+        address _nftBaseDeployer,
+        address _fixedPriceDeployer,
     ) {
-        alphaDeployer = _alphaDeployer;
-        betaDeployer = _betaDeployer;
-        gammaDeployer = _gammaDeployer;
-//        deltaDeployer = _deltaDeployer;
+        tokenBaseDeployer = _tokenBaseDeployer;
+        nftBaseDeployer = _nftBaseDeployer;
+        fixedPriceDeployer = _fixedPriceDeployer;
     }
 
-    event AlphaDeploy(
+    event TokenBaseDeploy(
         address indexed _addr,
         uint256 indexed id,
         string _name,
         string _symbol,
-        string _bURI,
         address _erc20,
         uint256 _rate
     );
-    event BetaDeploy(
+    event NFTBaseDeploy(
         address indexed _addr,
         uint256 indexed id,
         string _name,
         string _symbol,
-        string _bURI,
         address _erc721
     );
-    event GamaDeploy(
+    event FixedPriceDeploy(
         address indexed _addr,
         uint256 indexed id,
         string _name,
         string _symbol,
-        string _bURI,
         address _erc20,
-        uint256 _rate,
-        uint256 _maxSupply
+        uint256 _rate
+    );
 
-    );
-/*    event DeltaDeploy(
-        address indexed _addr,
-        uint256 indexed id,
-        string _name,
-        string _symbol,
-        address _erc20,
-        uint256 _ownerRate,
-        uint256 _startPrice,
-        uint256 _totalSupply,
-        address _incentiveAddress,
-        uint256 _amount
-    );
-*/
-    function alphaDeploy(
+    function tokenBaseDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
-        string memory _bURI,
         address _erc20,
         uint256 _rate
     ) public payable {
-        IAlphaDeployer factory = IAlphaDeployer(alphaDeployer);
-        address addr = factory.deployAlpha(_name, _symbol, _bURI, _erc20, _rate);
-        emit AlphaDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
+        ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
+        address addr = factory.deployTokenBase(_name, _symbol, _erc20, _rate);
+        emit TokenBaseDeploy(addr, _id, _name, _symbol, _erc20, _rate);
     }
 
-    function betaDeploy(
+    function nftBaseDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
-        string memory _bURI,
         address _erc721
     ) public payable {
-        IBetaDeployer factory = IBetaDeployer(betaDeployer);
-        address addr = factory.deployBeta(_name, _symbol, _bURI, _erc721);
-        emit BetaDeploy(addr, _id, _name, _symbol, _bURI, _erc721);
+        INFTBaseDeployer factory = INFTBaseDeployer(nftBaseDeployer);
+        address addr = factory.deployNFTBase(_name, _symbol, _erc721);
+        emit NFTBaseDeploy(addr, _id, _name, _symbol, _erc721);
     }
 
-    function gammaDeploy(
-        uint256 _id,
-        string memory _name,
-        string memory _symbol,
-        string memory _bURI,
-        address _erc20,
-        uint256 _rate,
-        uint256 _maxSupply
-    ) public payable {
-        IGammaDeployer factory = IGammaDeployer(gammaDeployer);
-        address addr = factory.deployGamma(_name, _symbol, _bURI, _erc20, _rate, _maxSupply);
-        emit GamaDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate, _maxSupply);
-    }
-
-/*    function deltaDeploy(
+    function fixedPriceDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
         address _erc20,
-        uint256 _ownerRate,
-        uint256 _startPrice,
-        uint256 _totalSupply,
-        address _incentiveAddress,
-        uint256 _amount
+        uint256 _rate
     ) public payable {
-        IDeltaDeployer factory = IDeltaDeployer(deltaDeployer);
-        address addr = factory.deployDelta(
-            _name,
-            _symbol,
-            _erc20,
-            _ownerRate,
-            _startPrice,
-            _totalSupply,
-            _incentiveAddress,
-            _amount
-        );
-        emit DeltaDeploy(
-            addr,
-            _id,
-            _name,
-            _symbol,
-            _erc20,
-            _ownerRate,
-            _startPrice,
-            _totalSupply,
-            _incentiveAddress,
-            _amount
-        );
+        IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
+        address addr = factory.deployFixedPrice(_name, _symbol, _erc20, _rate);
+        emit FixedPriceDeploy(addr, _id, _name, _symbol, _erc20, _rate);
     }
-    */
-}
