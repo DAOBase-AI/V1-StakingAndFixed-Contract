@@ -78,7 +78,10 @@ contract NFTBase is Context, ERC721, Ownable {
         tokenId = tokenIdTracker.current();                                     // accumulate the token id
         vault[tokenId] = _tokenId;                                              // associate PASS token id with NFT token id
        
-        IERC721(erc721).transferFrom(_msgSender(), address(this), _tokenId);    // send NFT from user to contract
+        bool success = IERC721(erc721).transferFrom(_msgSender(), address(this), _tokenId);
+        // in case old contract only return false when transfer fails
+        require(success, "ERC721: Transfer failed.");
+
         _safeMint(_msgSender(), tokenId);                                       // mint PASS to user address
         emit Mint(_msgSender(), tokenId);                                      
 
