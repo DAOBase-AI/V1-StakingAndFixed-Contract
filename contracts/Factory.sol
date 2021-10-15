@@ -25,6 +25,7 @@ contract Factory {
         uint256 indexed id,
         string _name,
         string _symbol,
+        string _bURI,
         address _erc20,
         uint256 _rate
     );
@@ -33,6 +34,7 @@ contract Factory {
         uint256 indexed id,
         string _name,
         string _symbol,
+        string _bURI,
         address _erc721
     );
     event FixedPriceDeploy(
@@ -40,6 +42,7 @@ contract Factory {
         uint256 indexed id,
         string _name,
         string _symbol,
+        string _bURI,
         address _erc20,
         uint256 _rate
     );
@@ -48,33 +51,36 @@ contract Factory {
         uint256 _id,
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc20,
         uint256 _rate
     ) public payable {
         ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
-        address addr = factory.deployTokenBase(_name, _symbol, _erc20, _rate);
-        emit TokenBaseDeploy(addr, _id, _name, _symbol, _erc20, _rate);
+        address addr = factory.deployTokenBase(_name, _symbol, _bURI, _erc20, _rate);
+        emit TokenBaseDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
     }
 
     function nftBaseDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc721
     ) public payable {
         INFTBaseDeployer factory = INFTBaseDeployer(nftBaseDeployer);
-        address addr = factory.deployNFTBase(_name, _symbol, _erc721);
-        emit NFTBaseDeploy(addr, _id, _name, _symbol, _erc721);
+        address addr = factory.deployNFTBase(_name, _symbol, _bURI, _erc721);
+        emit NFTBaseDeploy(addr, _id, _name, _symbol, _bURI, _erc721);
     }
 
     function fixedPriceDeploy(
         uint256 _id,
         string memory _name,
         string memory _symbol,
+        string memory _bURI,
         address _erc20,
         uint256 _rate
     ) public payable {
         IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
-        address addr = factory.deployFixedPrice(_name, _symbol, _erc20, _rate);
-        emit FixedPriceDeploy(addr, _id, _name, _symbol, _erc20, _rate);
+        address addr = factory.deployFixedPrice(_name, _symbol, _bURI, _erc20, _rate);
+        emit FixedPriceDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
     }
