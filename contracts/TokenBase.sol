@@ -15,7 +15,7 @@ contract TokenBase is Context, ERC721, Ownable {
     event Mint(address indexed from, uint256 indexed tokenId);
     event Burn(address indexed from, uint256 indexed tokenId);
 
-    address public owner;       // contract owner/admin is normally the creator
+    address public owner;       // contract owner is normally the creator
     address public erc20;       // creator's erc20 token address
     uint256 public rate;        // staking rate of erc20 token/PASS
 
@@ -25,20 +25,20 @@ contract TokenBase is Context, ERC721, Ownable {
     // Base URI
     string private _baseURIextended;
 
-    // token id counter. For erc721 contract, PASS serial number = token id
+    // token id counter. For erc721 contract, PASS index number = token id
     Counters.Counter private tokenIdTracker = Counters.Counter({
         _value: 1
     });
  
     constructor(string memory _name, string memory _symbol, string memory _bURI, address _erc20, uint256 _rate) ERC721(_name, _symbol) {
-        owner = tx.origin;      // the creator of DAO will be the owner/admin of PASS contract
+        owner = tx.origin;      // the creator of DAO will be the owner of PASS contract
         _baseURIextended = _bURI;
         erc20 = _erc20;
         rate = _rate;
     }
 
     function setBaseURI(string memory baseURI_) public {
-        require(owner == _msgSender(), "TokenBase: must have admin role");  // only contract owner/admin can setTokenURI
+        require(owner == _msgSender(), "TokenBase: caller is not the owner");  // only contract owner can setTokenURI
         _baseURIextended = baseURI_;
     }
 
@@ -64,12 +64,16 @@ contract TokenBase is Context, ERC721, Ownable {
         return string(abi.encodePacked(base, tokenId.toString()));
     }
 
-    function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
-        require(owner == _msgSender(), "TokenBase: must have admin role");  // only contract owner/admin can setTokenURI
-        require(_exists(tokenId), "ERC721: URI set of nonexistent token");
+    function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
+        require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
         _tokenURIs[tokenId] = _tokenURI;
     }
 
+    function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
+        require(owner == _msgSender(), "TokenBase: caller is not the owner");  // only contract owner can setTokenURI
+        _setTokenURI(tokenId, _tokenURI);
+    }
+    // stake creator's erc20 tokens to mint PASS
     function mint() public returns (uint256 tokenId) { 
         tokenId = tokenIdTracker.current();                                // accumulate the token id
 
@@ -81,7 +85,7 @@ contract TokenBase is Context, ERC721, Ownable {
 
         tokenIdTracker.increment();                                       // automate token id increment
     }
-
+    // burn PASS to get erc20 tokens back
    function burn(uint256 tokenId) public {
         require(tokenId != 0, "TokenBase: token id cannot be zero");
  
