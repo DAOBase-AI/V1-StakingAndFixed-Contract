@@ -21,28 +21,28 @@ contract Factory {
     }
 
     event TokenBaseDeploy(
-        address indexed _addr,
+        address indexed _addr,  //address of deployed NFT PASS contract
         uint256 indexed id,
         string _name,
         string _symbol,
-        string _bURI,
-        address _erc20,
+        string _bURI,       //baseuri of NFT PASS
+        address _erc20,     
         uint256 _rate
     );
     event NFTBaseDeploy(
-        address indexed _addr,
+        address indexed _addr,  
         uint256 indexed id,
         string _name,
         string _symbol,
-        string _bURI,
+        string _bURI,       
         address _erc721
     );
     event FixedPriceDeploy(
-        address indexed _addr,
+        address indexed _addr,  
         uint256 indexed id,
         string _name,
         string _symbol,
-        string _bURI,
+        string _bURI,       
         address _erc20,
         uint256 _rate
     );
@@ -56,7 +56,8 @@ contract Factory {
         uint256 _rate
     ) public payable {
         ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
-        address addr = factory.deployTokenBase(_name, _symbol, _bURI, _erc20, _rate);
+        //return the address of deployed NFT PASS contract
+        address addr = factory.deployTokenBase(_name, _symbol, _bURI, _erc20, _rate);  
         emit TokenBaseDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
     }
 
