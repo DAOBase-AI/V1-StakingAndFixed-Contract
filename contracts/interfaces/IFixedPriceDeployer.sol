@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-interface IGammaDeployer {
-    function deployGamma(
+interface IFixedPriceDeployer {
+    function deployFixedPrice(
         string memory _name,
         string memory _symbol,
         string memory _bURI,
