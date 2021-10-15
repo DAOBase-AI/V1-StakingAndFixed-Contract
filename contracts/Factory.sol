@@ -41,7 +41,8 @@ contract Factory {
         string _symbol,
         string _bURI,       
         address _erc20,
-        uint256 _rate
+        uint256 _rate,
+        uint256 _maxSupply
     );
 
     function tokenBaseDeploy(
@@ -73,9 +74,10 @@ contract Factory {
         string memory _symbol,
         string memory _bURI,
         address _erc20,
-        uint256 _rate
+        uint256 _rate,
+        uint256 _maxSupply
     ) public payable {
         IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
-        address addr = factory.deployFixedPrice(_name, _symbol, _bURI, _erc20, _rate);
-        emit FixedPriceDeploy(addr, _name, _symbol, _bURI, _erc20, _rate);
+        address addr = factory.deployFixedPrice(_name, _symbol, _bURI, _erc20, _rate, _maxSupply);
+        emit FixedPriceDeploy(addr, _name, _symbol, _bURI, _erc20, _rate, _maxSupply);
     }
