@@ -46,15 +46,15 @@ testPas
 
 ## Deploy&verify
 npx hardhat run scripts/deploy.js --network rinkeby
-npx hardhat verify --network rinkeby 0x6B758f2394b8Fc35Bcaa75eD4d15486B76b24db1 0xE30EC7cb7a3ba0E1DCEEceC2673B1f4A5c4aC8F5 0x467E0f99972d7e22017bFcCf2464Ee90477e6582 0x16f8DFEEcB29c4a70A2eA7F13F44e1A3316d9b66
-npx hardhat verify --network rinkeby 0xE30EC7cb7a3ba0E1DCEEceC2673B1f4A5c4aC8F5
-npx hardhat verify --network rinkeby 0x467E0f99972d7e22017bFcCf2464Ee90477e6582
-npx hardhat verify --network rinkeby 0x16f8DFEEcB29c4a70A2eA7F13F44e1A3316d9b66
+npx hardhat verify --network rinkeby 0xb86fc3750F2c122d8bC8799bc48529f71Fa87d1b 0xeeF8Ac2601d93950F4C3638477596C5203294235 0xcfAD9956831c35cc5443ecDb5477A782652F2a25 0xD13f24f9A04299C0A5E65002Ded2c7D61F133d9B
+npx hardhat verify --network rinkeby 0xeeF8Ac2601d93950F4C3638477596C5203294235
+npx hardhat verify --network rinkeby 0xcfAD9956831c35cc5443ecDb5477A782652F2a25
+npx hardhat verify --network rinkeby 0xD13f24f9A04299C0A5E65002Ded2c7D61F133d9B
 
-## Verify Qinshun(Please use Qinshun's PRIVATE_KEY)
-npx hardhat verify --network rinkeby 0xfbec59329b202b75194b6c2ade154927e400b69f "testPass" PASS "https://ipfs/" 0x0ccc24a6b8285468bb7aba8e86b090b7e6d44219 5
-npx hardhat verify --network rinkeby 0xb4463dc27a17866a250e7b59c08cd926930a2466 "beta test" betat "https://ipfs/" 0x5ed46ff8b506c36e2e7e767ed9b45c51ed910dab
-npx hardhat verify --network rinkeby 0xbed985de730750e6e59fe25080da1d666f7b03a7 3gamma1 3g1 "https://ipfs/" 0x0ccc24a6b8285468bb7aba8e86b090b7e6d44219 3000000000000000000 10000000000000000000
+## Create new contract using deployer on etherscan, and then verify
+npx hardhat verify --network rinkeby 0x2f8c46ed8a6f9d7a18212e94ed79e8075bfadc1e "testPass" PASS "https://ipfs/" 0x0ccc24a6b8285468bb7aba8e86b090b7e6d44219 5
+npx hardhat verify --network rinkeby 0x076ca102af91fb3b1fb416ecc8303c11d5291aaf "betaTest" betat "https://ipfs/" 0x5ed46ff8b506c36e2e7e767ed9b45c51ed910dab
+npx hardhat verify --network rinkeby 0xa3ff17c5f861ba7cbf04a9ada2d31986c64f5c0a 3gamma1 3g1 "https://ipfs/" 0x0ccc24a6b8285468bb7aba8e86b090b7e6d44219 3000000000000000000 10000000000000000000
 
 ## Deploy&verify ERC20&721
 npx hardhat run scripts/deployMine.js --network rinkeby

@@ -13,7 +13,7 @@ contract Factory {
     constructor(
         address _tokenBaseDeployer,
         address _nftBaseDeployer,
-        address _fixedPriceDeployer,
+        address _fixedPriceDeployer
     ) {
         tokenBaseDeployer = _tokenBaseDeployer;
         nftBaseDeployer = _nftBaseDeployer;
@@ -81,3 +81,4 @@ contract Factory {
         address addr = factory.deployFixedPrice(_name, _symbol, _bURI, _erc20, _rate, _maxSupply);
         emit FixedPriceDeploy(addr, _name, _symbol, _bURI, _erc20, _rate, _maxSupply);
     }
+}

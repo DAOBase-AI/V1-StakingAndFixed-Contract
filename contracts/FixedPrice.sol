@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+// import "@openzeppelin/contracts/access/Ownable.sol"; 
 
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPrice is Context, ERC721, Ownable {
+contract FixedPrice is Context, ERC721 {
     using Counters for Counters.Counter;
     using Strings for uint256;
 

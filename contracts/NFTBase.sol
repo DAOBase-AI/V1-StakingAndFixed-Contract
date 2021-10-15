@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+// import "@openzeppelin/contracts/access/Ownable.sol"; 
 
 // NFT staking based PASS contract. User stake creator's NFT to mint PASS and burn PASS to get creator's NFT back
-contract NFTBase is Context, ERC721, Ownable {
+contract NFTBase is Context, ERC721 {
     using Counters for Counters.Counter;
     using Strings for uint256;
 
@@ -78,9 +78,7 @@ contract NFTBase is Context, ERC721, Ownable {
         tokenId = tokenIdTracker.current();                                     // accumulate the token id
         vault[tokenId] = _tokenId;                                              // associate PASS token id with NFT token id
        
-        bool success = IERC721(erc721).transferFrom(_msgSender(), address(this), _tokenId);
-        // in case old contract only return false when transfer fails
-        require(success, "ERC721: Transfer failed.");
+        IERC721(erc721).transferFrom(_msgSender(), address(this), _tokenId);
 
         _safeMint(_msgSender(), tokenId);                                       // mint PASS to user address
         emit Mint(_msgSender(), tokenId);                                      
