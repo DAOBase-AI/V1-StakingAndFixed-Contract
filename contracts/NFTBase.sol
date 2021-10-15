@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol"; 
 
 // NFT staking based PASS contract. User stake creator's NFT to mint PASS and burn PASS to get creator's NFT back
-contract Beta is Context, ERC721, Ownable {
+contract NFTBase is Context, ERC721, Ownable {
     using Counters for Counters.Counter;
     using Strings for uint256;
 
