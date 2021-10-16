@@ -7,26 +7,26 @@ const hre = require("hardhat");
 
 async function main() {
   // Deploy deployers
-  const AlphaDeployer = await hre.ethers.getContractFactory("AlphaDeployer");
-  const BetaDeployer = await hre.ethers.getContractFactory("BetaDeployer");
-  const GammaDeployer = await hre.ethers.getContractFactory("GammaDeployer");
+  const TokenBaseDeployer = await hre.ethers.getContractFactory("TokenBaseDeployer");
+  const NFTBaseDeployer = await hre.ethers.getContractFactory("NFTBaseDeployer");
+  const FixedPriceDeployer = await hre.ethers.getContractFactory("FixedPriceDeployer");
   // const DeltaDeployer = await hre.ethers.getContractFactory("DeltaDeployer");
 
-  const alphaDeployer = await AlphaDeployer.deploy();
-  const betaDeployer = await BetaDeployer.deploy();
-  const gammaDeployer = await GammaDeployer.deploy();
+  const tokenBaseDeployer = await TokenBaseDeployer.deploy();
+  const nftBaseDeployer = await NFTBaseDeployer.deploy();
+  const fixedPriceDeployer = await FixedPriceDeployer.deploy();
   // const deltaDeployer = await DeltaDeployer.deploy();
 
-  console.log("Alpha address: " + alphaDeployer.address);
-  console.log("Beta address: " + betaDeployer.address);
-  console.log("Gamma address: " + gammaDeployer.address);
+  console.log("TokenBaseDeployer address: " + tokenBaseDeployer.address);
+  console.log("NFTBaseDeployer address: " + nftBaseDeployer.address);
+  console.log("FixedPriceDeployer address: " + fixedPriceDeployer.address);
 
   // Deploy MegaFactory
   const MegaFactory = await hre.ethers.getContractFactory("Factory");
   const megaFactory = await MegaFactory.deploy(
-    alphaDeployer.address, 
-    betaDeployer.address, 
-    gammaDeployer.address
+    tokenBaseDeployer.address, 
+    nftBaseDeployer.address, 
+    fixedPriceDeployer.address
     // deltaDeployer.address
   );
   await megaFactory.deployed();  

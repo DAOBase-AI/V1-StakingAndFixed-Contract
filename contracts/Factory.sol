@@ -13,7 +13,7 @@ contract Factory {
     constructor(
         address _tokenBaseDeployer,
         address _nftBaseDeployer,
-        address _fixedPriceDeployer,
+        address _fixedPriceDeployer
     ) {
         tokenBaseDeployer = _tokenBaseDeployer;
         nftBaseDeployer = _nftBaseDeployer;
@@ -22,7 +22,6 @@ contract Factory {
 
     event TokenBaseDeploy(
         address indexed _addr,  //address of deployed NFT PASS contract
-        uint256 indexed id,
         string _name,
         string _symbol,
         string _bURI,       //baseuri of NFT PASS
@@ -31,24 +30,22 @@ contract Factory {
     );
     event NFTBaseDeploy(
         address indexed _addr,  
-        uint256 indexed id,
         string _name,
         string _symbol,
         string _bURI,       
         address _erc721
     );
     event FixedPriceDeploy(
-        address indexed _addr,  
-        uint256 indexed id,
+        address indexed _addr, 
         string _name,
         string _symbol,
         string _bURI,       
         address _erc20,
-        uint256 _rate
+        uint256 _rate,
+        uint256 _maxSupply
     );
 
     function tokenBaseDeploy(
-        uint256 _id,
         string memory _name,
         string memory _symbol,
         string memory _bURI,
@@ -58,11 +55,10 @@ contract Factory {
         ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
         //return the address of deployed NFT PASS contract
         address addr = factory.deployTokenBase(_name, _symbol, _bURI, _erc20, _rate);  
-        emit TokenBaseDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
+        emit TokenBaseDeploy(addr, _name, _symbol, _bURI, _erc20, _rate);
     }
 
     function nftBaseDeploy(
-        uint256 _id,
         string memory _name,
         string memory _symbol,
         string memory _bURI,
@@ -70,18 +66,19 @@ contract Factory {
     ) public payable {
         INFTBaseDeployer factory = INFTBaseDeployer(nftBaseDeployer);
         address addr = factory.deployNFTBase(_name, _symbol, _bURI, _erc721);
-        emit NFTBaseDeploy(addr, _id, _name, _symbol, _bURI, _erc721);
+        emit NFTBaseDeploy(addr, _name, _symbol, _bURI, _erc721);
     }
 
     function fixedPriceDeploy(
-        uint256 _id,
         string memory _name,
         string memory _symbol,
         string memory _bURI,
         address _erc20,
-        uint256 _rate
+        uint256 _rate,
+        uint256 _maxSupply
     ) public payable {
         IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
-        address addr = factory.deployFixedPrice(_name, _symbol, _bURI, _erc20, _rate);
-        emit FixedPriceDeploy(addr, _id, _name, _symbol, _bURI, _erc20, _rate);
+        address addr = factory.deployFixedPrice(_name, _symbol, _bURI, _erc20, _rate, _maxSupply);
+        emit FixedPriceDeploy(addr, _name, _symbol, _bURI, _erc20, _rate, _maxSupply);
     }
+}
