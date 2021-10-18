@@ -92,7 +92,8 @@ contract NFTBase is Context, ERC721 {
 
         _burn(tokenId);
         IERC721(erc721).transferFrom(address(this), _msgSender(), vault[tokenId]);
-
+        delete vault[tokenId];
+        
         emit Burn(_msgSender(), tokenId);
     }
 
