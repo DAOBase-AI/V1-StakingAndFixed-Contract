@@ -11,7 +11,7 @@ const Unit = BigNumber.from(10).pow(Decimals);
 const Id = 10;
 const Name = 'Name';
 const Symbol = 'Symbol';
-const Balance = BigNumber.from(100000000).mul(Unit);
+const Balance = BigNumber.from(100,000,000).mul(Unit);
 const Rate = BigNumber.from(999).mul(Unit);
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
