@@ -41,7 +41,7 @@ contract NFTBase is Context, ERC721 {
     }
 
     function setBaseURI(string memory baseURI_) public {
-        require(owner == _msgSender(), "NFTBase: caller is not the owner"); // only contract owner can setTokenURI
+        require(owner == _msgSender(), "NFTBase: not the owner"); // only contract owner can setTokenURI
         _baseURIextended = baseURI_;
     }
 

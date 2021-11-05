@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -13,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract TokenBase is Context, ERC721, ERC721Burnable {
   using Counters for Counters.Counter;
   using Strings for uint256;
+  using SafeERC20 for IERC20;
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
@@ -96,13 +98,7 @@ contract TokenBase is Context, ERC721, ERC721Burnable {
   function mint() public returns (uint256 tokenId) {
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    bool success = IERC20(erc20).transferFrom(
-      _msgSender(),
-      address(this),
-      rate
-    );
-    // in case old contract only return false when transfer fails
-    require(success, "ERC20: transfer failed.");
+    IERC20(erc20).safeTransferFrom(_msgSender(), address(this), rate);
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
@@ -115,7 +111,8 @@ contract TokenBase is Context, ERC721, ERC721Burnable {
     require(tokenId != 0, "TokenBase: token id cannot be zero");
 
     super.burn(tokenId);
-    IERC20(erc20).transfer(_msgSender(), rate);
+    IERC20(erc20).safeTransfer(_msgSender(), rate);
+
     emit Burn(_msgSender(), tokenId);
   }
 
