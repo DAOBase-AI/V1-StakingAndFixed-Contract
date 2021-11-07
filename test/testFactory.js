@@ -83,7 +83,9 @@ describe('Beeper Dao Contracts', function () {
       it('only owner can set baseUrl', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(this.tokenBase.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          'TokenBase: not the owner'
+          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes('CREATOR')
+          )}`
         )
       })
     })

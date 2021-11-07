@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -11,13 +12,15 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
 // erc20 token staking based PASS contract. User stake creator's erc20 tokens to mint PASS and burn PASS to get erc20 tokens back.
-contract TokenBase is Context, ERC721, ERC721Burnable {
+contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
+
+  bytes32 public constant CREATOR = keccak256("CREATOR");
 
   address public owner; // contract owner is normally the creator
   address public erc20; // creator's erc20 token address
@@ -39,14 +42,15 @@ contract TokenBase is Context, ERC721, ERC721Burnable {
     address _erc20,
     uint256 _rate
   ) ERC721(_name, _symbol) {
+    _setupRole(CREATOR, tx.origin);
     owner = tx.origin; // the creator of DAO will be the owner of PASS contract
     _baseURIextended = _bURI;
     erc20 = _erc20;
     rate = _rate;
   }
 
-  function setBaseURI(string memory baseURI_) public {
-    require(owner == _msgSender(), "TokenBase: not the owner"); // only contract owner can setTokenURI
+  // only contract owner can setTokenURI
+  function setBaseURI(string memory baseURI_) public onlyRole(CREATOR) {
     _baseURIextended = baseURI_;
   }
 
@@ -89,8 +93,11 @@ contract TokenBase is Context, ERC721, ERC721Burnable {
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
-    require(owner == _msgSender(), "TokenBase: caller is not the owner"); // only contract owner can setTokenURI
+  // only contract owner can setTokenURI
+  function setTokenURI(uint256 tokenId, string memory _tokenURI)
+    public
+    onlyRole(CREATOR)
+  {
     _setTokenURI(tokenId, _tokenURI);
   }
 
@@ -120,7 +127,7 @@ contract TokenBase is Context, ERC721, ERC721Burnable {
     public
     view
     virtual
-    override(ERC721)
+    override(AccessControl, ERC721)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);

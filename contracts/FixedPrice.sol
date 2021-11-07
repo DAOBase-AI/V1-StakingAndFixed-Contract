@@ -21,7 +21,7 @@ contract FixedPrice is Context, AccessControl, ERC721 {
   event Withdraw(address indexed to, uint256 amount);
 
   bytes32 public constant CREATOR = keccak256("CREATOR");
-  
+
   address public owner; // contract owner is normally the creator
   address public erc20; // erc20 token used to purchase PASS
   uint256 public rate; // price rate of erc20 tokens/PASS
@@ -152,7 +152,7 @@ contract FixedPrice is Context, AccessControl, ERC721 {
     public
     view
     virtual
-    override(ERC721, AccessControl)
+    override(AccessControl, ERC721)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);
