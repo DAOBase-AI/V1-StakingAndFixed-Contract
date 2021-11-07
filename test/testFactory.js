@@ -60,7 +60,14 @@ describe('Beeper Dao Contracts', function () {
         )
       const receipt = await tx.wait()
       // console.log(receipt);
-      this.tokenBaseAddr = receipt.events[0].args[0]
+      for (const event of receipt.events) {
+        switch (event.event) {
+          case 'TokenBaseDeploy': {
+            this.tokenBaseAddr = event.args[0]
+          }
+        }
+      }
+
       let tokenBaseFactory = await hre.ethers.getContractFactory('TokenBase')
       // this.tokerBase = this.tokenBaseFactory.attach(this.tokenBaseAddress)
       this.tokenBase = tokenBaseFactory.attach(this.tokenBaseAddr)
@@ -180,8 +187,14 @@ describe('Beeper Dao Contracts', function () {
           this.maxSupply
         )
       const receipt = await tx.wait()
-      // console.log(receipt);
-      this.fixedPriceAddr = receipt.events[0].args[0]
+      for (const event of receipt.events) {
+        switch (event.event) {
+          case 'FixedPriceDeploy': {
+            this.fixedPriceAddr = event.args[0]
+          }
+        }
+      }
+
       let fixedPriceFactory = await hre.ethers.getContractFactory('FixedPrice')
       this.fixedPrice = fixedPriceFactory.attach(this.fixedPriceAddr)
     })
@@ -201,31 +214,48 @@ describe('Beeper Dao Contracts', function () {
       it('only owner can set baseUrl', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          'FixedPrice: not the owner'
+          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes('CREATOR')
+          )}`
         )
       })
 
-      it('setFeeParameters', async () => {
-        this.platformRate = 5
-        await this.fixedPrice.setFeeParameters(
-          this.platform.address,
-          this.platformRate
-        )
-        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
-        expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
+      describe('setFeeParameters', () => {
+        it('reverted when not the owner', async () => {
+          this.platformRate = 5
 
-        await expect(
-          this.fixedPrice.setFeeParameters(
-            this.platform.address,
-            this.platformRate
+          await expect(
+            this.fixedPrice.setFeeParameters(
+              this.platform.address,
+              this.platformRate
+            )
+          ).to.be.revertedWith(
+            `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes('CREATOR')
+            )}`
           )
-        ).to.be.revertedWith(
-          'FixedPrice: commission account and rate cannot be modified.'
-        )
+        })
+
+        it('can only setFeeParameters once', async () => {
+          this.platformRate = 5
+          await this.fixedPrice
+            .connect(this.creator)
+            .setFeeParameters(this.platform.address, this.platformRate)
+          expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
+          expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
+
+          await expect(
+            this.fixedPrice
+              .connect(this.creator)
+              .setFeeParameters(this.platform.address, this.platformRate)
+          ).to.be.revertedWith(
+            'FixedPrice: commission account and rate cannot be modified.'
+          )
+        })
       })
     })
 
-    describe('Mint & Bunr', () => {
+    describe('Mint & Burn', () => {
       it('succeeds when receive erc20', async () => {
         // mock erc20 balance
         await this.erc20.mint(this.user1.address, this.rate)
@@ -267,7 +297,11 @@ describe('Beeper Dao Contracts', function () {
 
         await expect(
           this.fixedPrice.connect(this.user1).withdraw()
-        ).to.be.revertedWith('FixedPrice: caller is not the owner')
+        ).to.be.revertedWith(
+          `AccessControl: account ${this.user1.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes('CREATOR')
+          )}`
+        )
 
         await expect(this.fixedPrice.connect(this.creator).withdraw())
           .to.emit(this.fixedPrice, 'Withdraw')
@@ -286,15 +320,10 @@ describe('Beeper Dao Contracts', function () {
           .approve(this.fixedPriceAddr, this.rate)
 
         // setFeeParameters
-        await expect(
-          this.fixedPrice.connect(this.user1).withdraw()
-        ).to.be.revertedWith('FixedPrice: caller is not the owner')
-
         this.platformRate = 5
-        await this.fixedPrice.setFeeParameters(
-          this.platform.address,
-          this.platformRate
-        )
+        await this.fixedPrice
+          .connect(this.creator)
+          .setFeeParameters(this.platform.address, this.platformRate)
         expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
         expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
 

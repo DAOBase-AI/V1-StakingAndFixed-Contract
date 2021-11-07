@@ -2,16 +2,16 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPrice is Context, ERC721 {
+contract FixedPrice is Context, AccessControl, ERC721 {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeMath for uint256;
@@ -20,6 +20,8 @@ contract FixedPrice is Context, ERC721 {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
 
+  bytes32 public constant CREATOR = keccak256("CREATOR");
+  
   address public owner; // contract owner is normally the creator
   address public erc20; // erc20 token used to purchase PASS
   uint256 public rate; // price rate of erc20 tokens/PASS
@@ -44,6 +46,7 @@ contract FixedPrice is Context, ERC721 {
     uint256 _rate,
     uint256 _maxSupply
   ) ERC721(_name, _symbol) {
+    _setupRole(CREATOR, tx.origin);
     owner = tx.origin; // the creator of DAO will be the owner of PASS contract
     _baseURIextended = _bURI;
     erc20 = _erc20;
@@ -51,14 +54,15 @@ contract FixedPrice is Context, ERC721 {
     maxSupply = _maxSupply;
   }
 
-  function setBaseURI(string memory baseURI_) public {
-    require(owner == _msgSender(), "FixedPrice: not the owner"); // only contract owner can setTokenURI
+  // only contract owner can setTokenURI
+  function setBaseURI(string memory baseURI_) public onlyRole(CREATOR) {
     _baseURIextended = baseURI_;
   }
 
   // commission account and rate initilization
   function setFeeParameters(address payable _platform, uint256 _platformRate)
     public
+    onlyRole(CREATOR)
   {
     require(
       platform == address(0),
@@ -107,8 +111,11 @@ contract FixedPrice is Context, ERC721 {
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
-    require(owner == _msgSender(), "FixedPrice: caller is not the owner"); // only contract owner can setTokenURI
+  // only contract owner can setTokenURI
+  function setTokenURI(uint256 tokenId, string memory _tokenURI)
+    public
+    onlyRole(CREATOR)
+  {
     _setTokenURI(tokenId, _tokenURI);
   }
 
@@ -133,9 +140,8 @@ contract FixedPrice is Context, ERC721 {
   }
 
   // owner withdraw erc20 tokens from contract
-  function withdraw() public {
-    require(owner == _msgSender(), "FixedPrice: caller is not the owner"); // only contract owner can withdraw reserve of erc20 tokens
-
+  // only contract owner can withdraw reserve of erc20 tokens
+  function withdraw() public onlyRole(CREATOR) {
     uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
     IERC20(erc20).safeTransfer(_msgSender(), amount); // transfer erc20 tokens to contract owner address
 
@@ -146,7 +152,7 @@ contract FixedPrice is Context, ERC721 {
     public
     view
     virtual
-    override(ERC721)
+    override(ERC721, AccessControl)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);
