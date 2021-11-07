@@ -2,16 +2,18 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "hardhat/console.sol";
 
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPrice is Context, AccessControl, ERC721 {
+contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeMath for uint256;
@@ -76,6 +78,10 @@ contract FixedPrice is Context, AccessControl, ERC721 {
     return _baseURIextended;
   }
 
+  function _getBalance() internal view returns (uint256) {
+    return address(this).balance;
+  }
+
   function tokenURI(uint256 tokenId)
     public
     view
@@ -121,6 +127,8 @@ contract FixedPrice is Context, AccessControl, ERC721 {
 
   // user buy PASS from contract with specific erc20 tokens
   function mint() public returns (uint256 tokenId) {
+    require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
+
     require(
       (tokenIdTracker.current() <= maxSupply),
       "FixedPrice: exceeds maximum supply"
@@ -139,13 +147,48 @@ contract FixedPrice is Context, AccessControl, ERC721 {
     tokenIdTracker.increment(); // automate token id increment
   }
 
+  function mintEth() public payable nonReentrant returns (uint256 tokenId) {
+    require(
+      address(erc20) == address(0),
+      "FixPrice: erc20 address is NOT null."
+    );
+
+    require(
+      (tokenIdTracker.current() <= maxSupply),
+      "FixedPrice: exceeds maximum supply"
+    );
+
+    require(msg.value >= rate, "FixPrice: not enough ether sent.");
+
+    tokenId = tokenIdTracker.current(); // accumulate the token id
+
+    _safeMint(_msgSender(), tokenId); // mint PASS to user address
+    emit Mint(_msgSender(), tokenId);
+
+    if (platform != address(0)) {
+      (bool success, ) = platform.call{value: rate.mul(platformRate).div(100)}(
+        ""
+      );
+      require(success, "Failed to send Ether");
+    }
+
+    tokenIdTracker.increment(); // automate token id increment
+  }
+
   // owner withdraw erc20 tokens from contract
   // only contract owner can withdraw reserve of erc20 tokens
-  function withdraw() public onlyRole(CREATOR) {
-    uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
-    IERC20(erc20).safeTransfer(_msgSender(), amount); // transfer erc20 tokens to contract owner address
+  function withdraw() public nonReentrant onlyRole(CREATOR) {
+    if (address(erc20) == address(0)) {
+      emit Withdraw(_msgSender(), _getBalance());
 
-    emit Withdraw(_msgSender(), amount);
+      (bool success, ) = payable(_msgSender()).call{value: _getBalance()}("");
+      require(success, "Failed to send Ether");
+    } else {
+      uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
+      IERC20(erc20).safeTransfer(_msgSender(), amount); // transfer erc20 tokens to contract owner address
+
+      emit Withdraw(_msgSender(), amount);
+    }
   }
 
   function supportsInterface(bytes4 interfaceId)
