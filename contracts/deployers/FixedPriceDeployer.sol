@@ -14,18 +14,18 @@ contract FixedPriceDeployer {
     uint256 _termOfValidity,
     uint256 _maxSupply
   ) public returns (address) {
-    address addr = address(
-      new FixedPrice(
-        _name,
-        _symbol,
-        _bURI,
-        _erc20,
-        _initialRate,
-        _startTime,
-        _termOfValidity,
-        _maxSupply
-      )
-    );
-    return addr;
+    return
+      address(
+        new FixedPrice(
+          _name,
+          _symbol,
+          _bURI,
+          _erc20,
+          _initialRate,
+          _startTime,
+          _termOfValidity,
+          _maxSupply
+        )
+      );
   }
 }

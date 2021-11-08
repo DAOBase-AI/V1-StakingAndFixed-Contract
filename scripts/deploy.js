@@ -3,41 +3,43 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-const hre = require("hardhat");
+const hre = require('hardhat')
 
 async function main() {
   // Deploy deployers
-  const TokenBaseDeployer = await hre.ethers.getContractFactory("TokenBaseDeployer");
-  const NFTBaseDeployer = await hre.ethers.getContractFactory("NFTBaseDeployer");
-  const FixedPriceDeployer = await hre.ethers.getContractFactory("FixedPriceDeployer");
-  // const DeltaDeployer = await hre.ethers.getContractFactory("DeltaDeployer");
+  const TokenBaseDeployer = await hre.ethers.getContractFactory(
+    'TokenBaseDeployer'
+  )
+  const NFTBaseDeployer = await hre.ethers.getContractFactory('NFTBaseDeployer')
+  const FixedPriceDeployer = await hre.ethers.getContractFactory(
+    'FixedPriceDeployer'
+  )
 
-  const tokenBaseDeployer = await TokenBaseDeployer.deploy();
-  const nftBaseDeployer = await NFTBaseDeployer.deploy();
-  const fixedPriceDeployer = await FixedPriceDeployer.deploy();
-  // const deltaDeployer = await DeltaDeployer.deploy();
+  const tokenBaseDeployer = await TokenBaseDeployer.deploy()
+  const nftBaseDeployer = await NFTBaseDeployer.deploy()
+  const fixedPriceDeployer = await FixedPriceDeployer.deploy()
+  await tokenBaseDeployer.deployed()
+  await nftBaseDeployer.deployed()
+  await fixedPriceDeployer.deployed()
 
-  console.log("TokenBaseDeployer address: " + tokenBaseDeployer.address);
-  console.log("NFTBaseDeployer address: " + nftBaseDeployer.address);
-  console.log("FixedPriceDeployer address: " + fixedPriceDeployer.address);
+  console.log('TokenBaseDeployer address: ' + tokenBaseDeployer.address)
+  console.log('NFTBaseDeployer address: ' + nftBaseDeployer.address)
+  console.log('FixedPriceDeployer address: ' + fixedPriceDeployer.address)
 
-  // Deploy MegaFactory
-  const MegaFactory = await hre.ethers.getContractFactory("Factory");
-  const megaFactory = await MegaFactory.deploy(
-    tokenBaseDeployer.address, 
-    nftBaseDeployer.address, 
+  // Deploy Factory
+  const Factory = await hre.ethers.getContractFactory('Factory')
+  const factory = await Factory.deploy(
+    tokenBaseDeployer.address,
+    nftBaseDeployer.address,
     fixedPriceDeployer.address
-    // deltaDeployer.address
-  );
-  await megaFactory.deployed();  
-  console.log("Factory address: " + megaFactory.address);
-
-  console.log("Factories on set.");
+  )
+  await factory.deployed()
+  console.log('Factory address: ' + factory.address)
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+  .catch(error => {
+    console.error(error)
+    process.exit(1)
+  })
