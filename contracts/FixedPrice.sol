@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "hardhat/console.sol";
 
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -26,7 +25,9 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   address public owner; // contract owner is normally the creator
   address public erc20; // erc20 token used to purchase PASS
-  uint256 public rate; // price rate of erc20 tokens/PASS
+  uint256 public initialRate; // price rate of erc20 tokens/PASS
+  uint256 public startTime;
+  uint256 public duration;
   uint256 public maxSupply; // Maximum supply of PASS
   address payable public platform; // thePass platform's commission account
   uint256 public platformRate; // thePass platform's commission rate in pph
@@ -45,14 +46,18 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    uint256 _rate,
+    uint256 _initialRate,
+    uint256 _startTime,
+    uint256 _duration,
     uint256 _maxSupply
   ) ERC721(_name, _symbol) {
     _setupRole(CREATOR, tx.origin);
     owner = tx.origin; // the creator of DAO will be the owner of PASS contract
     _baseURIextended = _bURI;
     erc20 = _erc20;
-    rate = _rate;
+    initialRate = _initialRate;
+    startTime = _startTime;
+    duration = _duration;
     maxSupply = _maxSupply;
   }
 
@@ -80,6 +85,13 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   function _getBalance() internal view returns (uint256) {
     return address(this).balance;
+  }
+
+  function getCurrentCostToMint() public view returns (uint256 cost) {
+    return
+      initialRate.mul(
+        uint256(1).sub(((block.timestamp.sub(startTime)).div(duration)))
+      );
   }
 
   function tokenURI(uint256 tokenId)
@@ -127,6 +139,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   // user buy PASS from contract with specific erc20 tokens
   function mint() public returns (uint256 tokenId) {
+    uint256 rate = getCurrentCostToMint();
     require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
 
     require(
@@ -148,6 +161,8 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   }
 
   function mintEth() public payable nonReentrant returns (uint256 tokenId) {
+    uint256 rate = getCurrentCostToMint();
+
     require(
       address(erc20) == address(0),
       "FixPrice: erc20 address is NOT null."

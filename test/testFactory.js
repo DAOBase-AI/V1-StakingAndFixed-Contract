@@ -1,6 +1,9 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
 const { ethers } = require('ethers')
+const {
+  ConstructorFragment,
+} = require('@ethersproject/contracts/node_modules/@ethersproject/abi')
 
 describe('Beeper Dao Contracts', function () {
   beforeEach(async () => {
@@ -45,149 +48,160 @@ describe('Beeper Dao Contracts', function () {
     )
   })
 
-  describe('TokenBase Test', () => {
-    beforeEach(async () => {
-      this.rate = 1000
+  // describe('TokenBase Test', () => {
+  //   beforeEach(async () => {
+  //     this.rate = 1000
 
-      const tx = await this.factory
-        .connect(this.creator)
-        .tokenBaseDeploy(
-          'test_name',
-          'test_symbol',
-          'https://test_url.com/',
-          this.erc20.address,
-          this.rate
-        )
-      const receipt = await tx.wait()
-      // console.log(receipt);
-      for (const event of receipt.events) {
-        switch (event.event) {
-          case 'TokenBaseDeploy': {
-            this.tokenBaseAddr = event.args[0]
-          }
-        }
-      }
+  //     const tx = await this.factory
+  //       .connect(this.creator)
+  //       .tokenBaseDeploy(
+  //         'test_name',
+  //         'test_symbol',
+  //         'https://test_url.com/',
+  //         this.erc20.address,
+  //         this.rate
+  //       )
+  //     const receipt = await tx.wait()
+  //     // console.log(receipt);
+  //     for (const event of receipt.events) {
+  //       switch (event.event) {
+  //         case 'TokenBaseDeploy': {
+  //           this.tokenBaseAddr = event.args[0]
+  //         }
+  //       }
+  //     }
 
-      let tokenBaseFactory = await hre.ethers.getContractFactory('TokenBase')
-      // this.tokerBase = this.tokenBaseFactory.attach(this.tokenBaseAddress)
-      this.tokenBase = tokenBaseFactory.attach(this.tokenBaseAddr)
-    })
+  //     let tokenBaseFactory = await hre.ethers.getContractFactory('TokenBase')
+  //     // this.tokerBase = this.tokenBaseFactory.attach(this.tokenBaseAddress)
+  //     this.tokenBase = tokenBaseFactory.attach(this.tokenBaseAddr)
+  //   })
 
-    describe('Public Info Check: owner, erc20 Address, rate', () => {
-      it('check base info', async () => {
-        expect(await this.tokenBase.owner()).to.eq(this.creator.address)
-        expect(await this.tokenBase.erc20()).to.eq(this.erc20.address)
-        expect(await this.tokenBase.rate()).to.eq(this.rate)
-      })
+  //   describe('Public Info Check: owner, erc20 Address, rate', () => {
+  //     it('check base info', async () => {
+  //       expect(await this.tokenBase.owner()).to.eq(this.creator.address)
+  //       expect(await this.tokenBase.erc20()).to.eq(this.erc20.address)
+  //       expect(await this.tokenBase.rate()).to.eq(this.rate)
+  //     })
 
-      it('only owner can set baseUrl', async () => {
-        const newBaseUrl = 'https://newBaserul.com/'
-        await expect(this.tokenBase.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
-            ethers.utils.toUtf8Bytes('CREATOR')
-          )}`
-        )
-      })
-    })
+  //     it('only owner can set baseUrl', async () => {
+  //       const newBaseUrl = 'https://newBaserul.com/'
+  //       await expect(this.tokenBase.setBaseURI(newBaseUrl)).to.be.revertedWith(
+  //         `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
+  //           ethers.utils.toUtf8Bytes('CREATOR')
+  //         )}`
+  //       )
+  //     })
+  //   })
 
-    describe('Mint & Burn', () => {
-      it('succeeds when receive erc20 ', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.rate)
-        await this.erc20.mint(this.user3.address, this.rate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.tokenBaseAddr, this.rate)
-        await this.erc20
-          .connect(this.user3)
-          .approve(this.tokenBaseAddr, this.rate)
+  //   describe('Mint & Burn', () => {
+  //     it('succeeds when receive erc20 ', async () => {
+  //       // mock erc20 balance
+  //       await this.erc20.mint(this.user1.address, this.rate)
+  //       await this.erc20.mint(this.user3.address, this.rate)
+  //       await this.erc20
+  //         .connect(this.user1)
+  //         .approve(this.tokenBaseAddr, this.rate)
+  //       await this.erc20
+  //         .connect(this.user3)
+  //         .approve(this.tokenBaseAddr, this.rate)
 
-        // user 1 mint with token id 1
-        await expect(this.tokenBase.connect(this.user1).mint())
-          .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+  //       // user 1 mint with token id 1
+  //       await expect(this.tokenBase.connect(this.user1).mint())
+  //         .to.emit(this.tokenBase, 'Mint')
+  //         .withArgs(this.user1.address, 1)
 
-        //user 3 mint with token id 2
-        await expect(this.tokenBase.connect(this.user3).mint())
-          .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user3.address, 2)
-      })
+  //       //user 3 mint with token id 2
+  //       await expect(this.tokenBase.connect(this.user3).mint())
+  //         .to.emit(this.tokenBase, 'Mint')
+  //         .withArgs(this.user3.address, 2)
+  //     })
 
-      it('reverted when receive erc20 failed', async () => {
-        //user 2 failed
-        await expect(this.tokenBase.connect(this.user2).mint()).to.be.reverted
-      })
+  //     it('reverted when receive erc20 failed', async () => {
+  //       //user 2 failed
+  //       await expect(this.tokenBase.connect(this.user2).mint()).to.be.reverted
+  //     })
 
-      it('succeeds when user1 mint and uesr1 burn', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.rate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.tokenBaseAddr, this.rate)
+  //     it('succeeds when user1 mint and uesr1 burn', async () => {
+  //       // mock erc20 balance
+  //       await this.erc20.mint(this.user1.address, this.rate)
+  //       await this.erc20
+  //         .connect(this.user1)
+  //         .approve(this.tokenBaseAddr, this.rate)
 
-        // user 1 mint a token
-        await expect(this.tokenBase.connect(this.user1).mint())
-          .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+  //       // user 1 mint a token
+  //       await expect(this.tokenBase.connect(this.user1).mint())
+  //         .to.emit(this.tokenBase, 'Mint')
+  //         .withArgs(this.user1.address, 1)
 
-        await expect(this.tokenBase.connect(this.user1).burn('1'))
-          .to.emit(this.tokenBase, 'Burn')
-          .withArgs(this.user1.address, 1)
-          .to.emit(this.tokenBase, 'Transfer')
-          .withArgs(this.user1.address, ethers.constants.AddressZero, 1)
-      })
+  //       await expect(this.tokenBase.connect(this.user1).burn('1'))
+  //         .to.emit(this.tokenBase, 'Burn')
+  //         .withArgs(this.user1.address, 1)
+  //         .to.emit(this.tokenBase, 'Transfer')
+  //         .withArgs(this.user1.address, ethers.constants.AddressZero, 1)
+  //     })
 
-      it('reverted when user1 mint , user2 burn', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.rate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.tokenBaseAddr, this.rate)
+  //     it('reverted when user1 mint , user2 burn', async () => {
+  //       // mock erc20 balance
+  //       await this.erc20.mint(this.user1.address, this.rate)
+  //       await this.erc20
+  //         .connect(this.user1)
+  //         .approve(this.tokenBaseAddr, this.rate)
 
-        // user 1 mint a token
-        await expect(this.tokenBase.connect(this.user1).mint())
-          .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+  //       // user 1 mint a token
+  //       await expect(this.tokenBase.connect(this.user1).mint())
+  //         .to.emit(this.tokenBase, 'Mint')
+  //         .withArgs(this.user1.address, 1)
 
-        await expect(
-          this.tokenBase.connect(this.user2).burn(1)
-        ).to.be.revertedWith('ERC721Burnable: caller is not owner nor approved')
-      })
+  //       await expect(
+  //         this.tokenBase.connect(this.user2).burn(1)
+  //       ).to.be.revertedWith('ERC721Burnable: caller is not owner nor approved')
+  //     })
 
-      it('reverted when user burn a nonexistent token', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.rate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.tokenBaseAddr, this.rate)
+  //     it('reverted when user burn a nonexistent token', async () => {
+  //       // mock erc20 balance
+  //       await this.erc20.mint(this.user1.address, this.rate)
+  //       await this.erc20
+  //         .connect(this.user1)
+  //         .approve(this.tokenBaseAddr, this.rate)
 
-        // user 1 mint a token
-        await expect(this.tokenBase.connect(this.user1).mint())
-          .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+  //       // user 1 mint a token
+  //       await expect(this.tokenBase.connect(this.user1).mint())
+  //         .to.emit(this.tokenBase, 'Mint')
+  //         .withArgs(this.user1.address, 1)
 
-        await expect(
-          this.tokenBase.connect(this.user1).burn(2)
-        ).to.be.revertedWith('ERC721: operator query for nonexistent token')
-      })
-    })
-  })
+  //       await expect(
+  //         this.tokenBase.connect(this.user1).burn(2)
+  //       ).to.be.revertedWith('ERC721: operator query for nonexistent token')
+  //     })
+  //   })
+  // })
 
   describe('FixPrice Test', () => {
     describe('FixedPrice with erc20', () => {
       beforeEach(async () => {
-        this.rate = 1000
-        this.maxSupply = 100
+        ;(this.rate = 1000),
+          (this.constructorParameter = {
+            name: 'test_name',
+            symbol: 'test_symbol',
+            bURI: 'https://test_url.com/',
+            erc20: this.erc20.address,
+            initialRate: this.rate,
+            startTime: Date.parse(new Date()) / 1000 + 10,
+            duration: 100,
+            maxSupply: 100,
+          })
 
         const tx = await this.factory
           .connect(this.creator)
           .fixedPriceDeploy(
-            'test_name',
-            'test_symbol',
-            'https://test_url.com/',
-            this.erc20.address,
-            this.rate,
-            this.maxSupply
+            this.constructorParameter.name,
+            this.constructorParameter.symbol,
+            this.constructorParameter.bURI,
+            this.constructorParameter.erc20,
+            this.constructorParameter.initialRate,
+            this.constructorParameter.startTime,
+            this.constructorParameter.duration,
+            this.constructorParameter.maxSupply
           )
         const receipt = await tx.wait()
         for (const event of receipt.events) {
@@ -208,8 +222,10 @@ describe('Beeper Dao Contracts', function () {
         it('check base info', async () => {
           expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
           expect(await this.fixedPrice.erc20()).to.eq(this.erc20.address)
-          expect(await this.fixedPrice.rate()).to.eq(this.rate)
-          expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
+          // expect(await this.fixedPrice.rate()).to.eq(this.rate)
+          expect(await this.fixedPrice.maxSupply()).to.eq(
+            this.constructorParameter.maxSupply
+          )
           expect(await this.fixedPrice.platform()).to.eq(
             ethers.constants.AddressZero
           )
@@ -360,23 +376,29 @@ describe('Beeper Dao Contracts', function () {
     describe('FixedPrice with ether', () => {
       beforeEach(async () => {
         this.rate = '1'
-        this.options = {
-          value: ethers.utils.parseEther(this.rate),
+        this.initialRate = ethers.utils.parseEther(this.rate)
+        this.constructorParameter = {
+          name: 'test_name',
+          symbol: 'test_symbol',
+          bURI: 'https://test_url.com/',
+          erc20: ethers.constants.AddressZero,
+          initialRate: this.initialRate,
+          startTime: Date.parse(new Date()) / 1000 + 10,
+          duration: 100,
+          maxSupply: 100,
         }
-        this.shortOptions = {
-          value: ethers.utils.parseEther((this.rate / 2).toString()),
-        }
-        this.maxSupply = 100
 
         const tx = await this.factory
           .connect(this.creator)
           .fixedPriceDeploy(
-            'test_name',
-            'test_symbol',
-            'https://test_url.com/',
-            ethers.constants.AddressZero,
-            ethers.utils.parseEther(this.rate),
-            this.maxSupply
+            this.constructorParameter.name,
+            this.constructorParameter.symbol,
+            this.constructorParameter.bURI,
+            this.constructorParameter.erc20,
+            this.constructorParameter.initialRate,
+            this.constructorParameter.startTime,
+            this.constructorParameter.duration,
+            this.constructorParameter.maxSupply
           )
         const receipt = await tx.wait()
         for (const event of receipt.events) {
@@ -385,6 +407,13 @@ describe('Beeper Dao Contracts', function () {
               this.fixedPriceAddr = event.args[0]
             }
           }
+        }
+
+        this.options = {
+          value: ethers.utils.parseEther(this.rate),
+        }
+        this.shortOptions = {
+          value: ethers.utils.parseEther((this.rate / 2).toString()),
         }
 
         let fixedPriceFactory = await hre.ethers.getContractFactory(
@@ -399,10 +428,12 @@ describe('Beeper Dao Contracts', function () {
           expect(await this.fixedPrice.erc20()).to.eq(
             ethers.constants.AddressZero
           )
-          expect(await this.fixedPrice.rate()).to.eq(
-            ethers.utils.parseEther(this.rate)
+          // expect(await this.fixedPrice.rate()).to.eq(
+          //   ethers.utils.parseEther(this.rate)
+          // )
+          expect(await this.fixedPrice.maxSupply()).to.eq(
+            this.constructorParameter.maxSupply
           )
-          expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
           expect(await this.fixedPrice.platform()).to.eq(
             ethers.constants.AddressZero
           )
