@@ -43,7 +43,7 @@ contract Factory {
     address _erc20,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _duration,
+    uint256 _termOfValidity,
     uint256 _maxSupply
   );
 
@@ -84,7 +84,7 @@ contract Factory {
     address _erc20,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _duration,
+    uint256 _termOfValidity,
     uint256 _maxSupply
   ) public payable {
     IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
@@ -95,7 +95,7 @@ contract Factory {
       _erc20,
       _initialRate,
       _startTime,
-      _duration,
+      _termOfValidity,
       _maxSupply
     );
     emit FixedPriceDeploy(
@@ -106,7 +106,7 @@ contract Factory {
       _erc20,
       _initialRate,
       _startTime,
-      _duration,
+      _termOfValidity,
       _maxSupply
     );
   }

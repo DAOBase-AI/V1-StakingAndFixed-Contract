@@ -9,7 +9,7 @@ interface IFixedPriceDeployer {
     address _erc20,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _duration,
+    uint256 _termOfValidity,
     uint256 _maxSupply
   ) external returns (address);
 }

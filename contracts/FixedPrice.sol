@@ -2,20 +2,16 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// import "@openzeppelin/contracts/access/Ownable.sol";
-
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
 contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
-  using SafeMath for uint256;
   using SafeERC20 for IERC20;
 
   event Mint(address indexed from, uint256 indexed tokenId);
@@ -23,12 +19,14 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   bytes32 public constant CREATOR = keccak256("CREATOR");
 
-  address public owner; // contract owner is normally the creator
-  address public erc20; // erc20 token used to purchase PASS
   uint256 public initialRate; // price rate of erc20 tokens/PASS
   uint256 public startTime;
-  uint256 public duration;
+  uint256 public termOfValidity;
+  uint256 public endTime; // endTime = startTime + termOfValidity
   uint256 public maxSupply; // Maximum supply of PASS
+  uint256 public slope; // slope = initialRate / termOfValidity
+  address public owner; // contract owner is normally the creator
+  address public erc20; // erc20 token used to purchase PASS
   address payable public platform; // thePass platform's commission account
   uint256 public platformRate; // thePass platform's commission rate in pph
 
@@ -48,7 +46,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     address _erc20,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _duration,
+    uint256 _termOfValidity,
     uint256 _maxSupply
   ) ERC721(_name, _symbol) {
     _setupRole(CREATOR, tx.origin);
@@ -57,7 +55,9 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     erc20 = _erc20;
     initialRate = _initialRate;
     startTime = _startTime;
-    duration = _duration;
+    termOfValidity = _termOfValidity;
+    endTime = _startTime + _termOfValidity;
+    slope = _initialRate / _termOfValidity;
     maxSupply = _maxSupply;
   }
 
@@ -71,10 +71,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     public
     onlyRole(CREATOR)
   {
-    require(
-      platform == address(0),
-      "FixedPrice: commission account and rate cannot be modified."
-    );
+    require(platform == address(0), "has set beneficiary & rate");
     platform = _platform;
     platformRate = _platformRate;
   }
@@ -88,10 +85,15 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   }
 
   function getCurrentCostToMint() public view returns (uint256 cost) {
-    return
-      initialRate.mul(
-        uint256(1).sub(((block.timestamp.sub(startTime)).div(duration)))
-      );
+    return _getCurrentCostToMint();
+  }
+
+  function _getCurrentCostToMint() internal view returns (uint256) {
+    require(
+      (block.timestamp >= startTime) && (block.timestamp <= endTime),
+      "FixedPrice: not in time"
+    );
+    return initialRate - (slope * (block.timestamp - startTime));
   }
 
   function tokenURI(uint256 tokenId)
@@ -101,10 +103,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     override
     returns (string memory)
   {
-    require(
-      _exists(tokenId),
-      "ERC721Metadata: URI query for nonexistent token"
-    );
+    require(_exists(tokenId), "URI query for nonexistent token");
 
     string memory _tokenURI = _tokenURIs[tokenId];
     string memory base = _baseURI();
@@ -125,7 +124,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     internal
     virtual
   {
-    require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+    require(_exists(tokenId), "URI set of nonexistent token");
     _tokenURIs[tokenId] = _tokenURI;
   }
 
@@ -139,19 +138,16 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   // user buy PASS from contract with specific erc20 tokens
   function mint() public returns (uint256 tokenId) {
-    uint256 rate = getCurrentCostToMint();
     require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
+    require((tokenIdTracker.current() <= maxSupply), "exceeds maximum supply");
+    uint256 rate = _getCurrentCostToMint();
 
-    require(
-      (tokenIdTracker.current() <= maxSupply),
-      "FixedPrice: exceeds maximum supply"
-    );
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
     IERC20(erc20).safeTransferFrom(_msgSender(), address(this), rate);
 
     if (platform != address(0)) {
-      IERC20(erc20).safeTransfer(platform, rate.mul(platformRate).div(100));
+      IERC20(erc20).safeTransfer(platform, (rate * platformRate) / 100);
     }
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
@@ -161,19 +157,11 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   }
 
   function mintEth() public payable nonReentrant returns (uint256 tokenId) {
-    uint256 rate = getCurrentCostToMint();
+    require(address(erc20) == address(0), "ERC20 address is NOT null.");
+    require((tokenIdTracker.current() <= maxSupply), "Exceeds maximum supply");
 
-    require(
-      address(erc20) == address(0),
-      "FixPrice: erc20 address is NOT null."
-    );
-
-    require(
-      (tokenIdTracker.current() <= maxSupply),
-      "FixedPrice: exceeds maximum supply"
-    );
-
-    require(msg.value >= rate, "FixPrice: not enough ether sent.");
+    uint256 rate = _getCurrentCostToMint();
+    require(msg.value >= rate, "Not enough ether sent.");
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
@@ -181,7 +169,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     emit Mint(_msgSender(), tokenId);
 
     if (platform != address(0)) {
-      (bool success, ) = platform.call{value: rate.mul(platformRate).div(100)}(
+      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}(
         ""
       );
       require(success, "Failed to send Ether");
