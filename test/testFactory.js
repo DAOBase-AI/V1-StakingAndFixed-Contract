@@ -315,6 +315,10 @@ describe('Beeper Dao Contracts', function () {
             await this.fixedPrice.getCurrentCostToMint()
           ).toString()
 
+          await this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+
           await expect(
             this.fixedPrice.connect(this.user1).withdraw()
           ).to.be.revertedWith(
@@ -323,9 +327,9 @@ describe('Beeper Dao Contracts', function () {
             )}`
           )
 
-          await expect(this.fixedPrice.connect(this.creator).withdraw())
+          await expect(this.fixedPrice.connect(this.user3).withdraw())
             .to.emit(this.fixedPrice, 'Withdraw')
-            .withArgs(this.creator.address, price)
+            .withArgs(this.user3.address, price)
         })
 
         it('succeeds when user1 mint (with platform fee)', async () => {

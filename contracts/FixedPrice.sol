@@ -28,6 +28,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   address public owner; // contract owner is normally the creator
   address public erc20; // erc20 token used to purchase PASS
   address payable public platform; // thePass platform's commission account
+  address payable public beneficiary; // thePass benfit receiving account
   uint256 public platformRate; // thePass platform's commission rate in pph
 
   // Optional mapping for token URIs
@@ -49,6 +50,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     uint256 _termOfValidity,
     uint256 _maxSupply
   ) ERC721(_name, _symbol) {
+    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
     _setupRole(CREATOR, tx.origin);
     owner = tx.origin; // the creator of DAO will be the owner of PASS contract
     _baseURIextended = _bURI;
@@ -59,6 +61,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     endTime = _startTime + _termOfValidity;
     slope = _initialRate / _termOfValidity;
     maxSupply = _maxSupply;
+    beneficiary = payable(owner);
   }
 
   // only contract owner can setTokenURI
@@ -94,6 +97,11 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
       "FixedPrice: not in time"
     );
     return initialRate - (slope * (block.timestamp - startTime));
+  }
+
+  function changeBeneficiary(address payable _newBeneficiary) public {
+    grantRole(CREATOR, _newBeneficiary);
+    beneficiary = _newBeneficiary;
   }
 
   function tokenURI(uint256 tokenId)
@@ -182,15 +190,15 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   // only contract owner can withdraw reserve of erc20 tokens
   function withdraw() public nonReentrant onlyRole(CREATOR) {
     if (address(erc20) == address(0)) {
-      emit Withdraw(_msgSender(), _getBalance());
+      emit Withdraw(beneficiary, _getBalance());
 
-      (bool success, ) = payable(_msgSender()).call{value: _getBalance()}("");
+      (bool success, ) = payable(beneficiary).call{value: _getBalance()}("");
       require(success, "Failed to send Ether");
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
-      IERC20(erc20).safeTransfer(_msgSender(), amount); // transfer erc20 tokens to contract owner address
+      IERC20(erc20).safeTransfer(beneficiary, amount); // transfer erc20 tokens to contract owner address
 
-      emit Withdraw(_msgSender(), amount);
+      emit Withdraw(beneficiary, amount);
     }
   }
 
