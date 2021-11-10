@@ -11,27 +11,38 @@ async function main() {
     'TokenBaseDeployer'
   )
   const NFTBaseDeployer = await hre.ethers.getContractFactory('NFTBaseDeployer')
-  const FixedPriceDeployer = await hre.ethers.getContractFactory(
-    'FixedPriceDeployer'
+  const FixedPricePeriodDeployer = await hre.ethers.getContractFactory(
+    'FixedPricePeriodDeployer'
+  )
+  const FixedPricePeriodicDeployer = await hre.ethers.getContractFactory(
+    'FixedPricePeriodicDeployer'
   )
 
   const tokenBaseDeployer = await TokenBaseDeployer.deploy()
   const nftBaseDeployer = await NFTBaseDeployer.deploy()
-  const fixedPriceDeployer = await FixedPriceDeployer.deploy()
+  const fixedPricePeriodDeployer = await FixedPricePeriodDeployer.deploy()
+  const fixedPricePeriodicDeployer = await FixedPricePeriodicDeployer.deploy()
   await tokenBaseDeployer.deployed()
   await nftBaseDeployer.deployed()
-  await fixedPriceDeployer.deployed()
+  await fixedPricePeriodDeployer.deployed()
+  await fixedPricePeriodicDeployer.deployed()
 
   console.log('TokenBaseDeployer address: ' + tokenBaseDeployer.address)
   console.log('NFTBaseDeployer address: ' + nftBaseDeployer.address)
-  console.log('FixedPriceDeployer address: ' + fixedPriceDeployer.address)
+  console.log(
+    'FixedPricePeriodDeployer address: ' + fixedPricePeriodDeployer.address
+  )
+  console.log(
+    'FixedPricePeriodicDeployer address: ' + fixedPricePeriodicDeployer.address
+  )
 
   // Deploy Factory
   const Factory = await hre.ethers.getContractFactory('Factory')
   const factory = await Factory.deploy(
     tokenBaseDeployer.address,
     nftBaseDeployer.address,
-    fixedPriceDeployer.address
+    fixedPricePeriodDeployer.address,
+    fixedPricePeriodicDeployer.address
   )
   await factory.deployed()
   console.log('Factory address: ' + factory.address)

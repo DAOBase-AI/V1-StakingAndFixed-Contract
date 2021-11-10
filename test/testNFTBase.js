@@ -52,4 +52,6 @@ describe('Beeper Dao Contracts', function () {
       this.FixedPricePeriodDeployer.address
     )
   })
+
+  describe('NFTBase Test', () => {})
 })

@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
+contract FixedPricePeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;

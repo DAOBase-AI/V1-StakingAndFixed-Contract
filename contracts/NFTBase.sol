@@ -5,12 +5,13 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 // import "@openzeppelin/contracts/access/Ownable.sol";
 
 // NFT staking based PASS contract. User stake creator's NFT to mint PASS and burn PASS to get creator's NFT back
-contract NFTBase is Context, AccessControl, ERC721 {
+contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
   using Counters for Counters.Counter;
   using Strings for uint256;
 
@@ -110,10 +111,10 @@ contract NFTBase is Context, AccessControl, ERC721 {
   }
 
   // burn PASS to get creator's NFT back
-  function burn(uint256 tokenId) public {
+  function burn(uint256 tokenId) public virtual override {
     require(tokenId != 0, "NFTBase: token id cannot be zero");
 
-    _burn(tokenId);
+    super.burn(tokenId);
     IERC721(erc721).transferFrom(address(this), _msgSender(), vault[tokenId]);
     delete vault[tokenId];
 

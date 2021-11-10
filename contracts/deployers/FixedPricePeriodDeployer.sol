@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "../FixedPrice.sol";
+import "../FixedPricePeriod.sol";
 
-contract FixedPriceDeployer {
+contract FixedPricePeriodDeployer {
   function deployFixedPrice(
     string memory _name,
     string memory _symbol,
@@ -16,7 +16,7 @@ contract FixedPriceDeployer {
   ) public returns (address) {
     return
       address(
-        new FixedPrice(
+        new FixedPricePeriod(
           _name,
           _symbol,
           _bURI,
