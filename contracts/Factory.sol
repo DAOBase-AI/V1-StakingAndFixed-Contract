@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ITokenBaseDeployer.sol";
 import "./interfaces/INFTBaseDeployer.sol";
 import "./interfaces/IFixedPeriodDeployer.sol";
 import "./interfaces/IFixedPriceDeployer.sol";
 
-contract Factory {
+contract Factory is Ownable {
   address private tokenBaseDeployer;
   address private nftBaseDeployer;
   address private fixedPeriodDeployer;
   address private fixedPriceDeployer;
+
+  address payable private platform;
+  uint256 private platformRate;
 
   constructor(
     address _tokenBaseDeployer,
@@ -39,16 +43,19 @@ contract Factory {
     string _bURI,
     address _erc721
   );
-  event FixedPriceDeploy(
+  event FixedPeriodDeploy(
     address indexed _addr,
     string _name,
     string _symbol,
     string _bURI,
     address _erc20,
+    address _platform,
+    address _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _termOfValidity,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    uint256 _platformRate
   );
 
   event FixedPriceDeploy(
@@ -60,6 +67,16 @@ contract Factory {
     uint256 _rate,
     uint256 _maxSupply
   );
+
+  // set up the platform commission account
+  function setPlatform(address payable _platform) public onlyOwner {
+    platform = _platform;
+  }
+
+  // set the platform commission rate, only operable by contract owner, _platformRate is in pph
+  function setPlatformRate(uint256 _platformRate) public onlyOwner {
+    platformRate = _platformRate;
+  }
 
   function tokenBaseDeploy(
     string memory _name,
@@ -96,35 +113,38 @@ contract Factory {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    address payable _platform,
+    address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _termOfValidity,
-    uint256 _maxSupply,
-    uint256 _platformRate
+    uint256 _maxSupply
   ) public payable {
     address addr = IFixedPeriodDeployer(fixedPeriodDeployer).deployFixedPeriod(
       _name,
       _symbol,
       _bURI,
       _erc20,
-      _platform,
+      platform,
+      _beneficiary,
       _initialRate,
       _startTime,
       _termOfValidity,
       _maxSupply,
-      _platformRate
+      platformRate
     );
-    emit FixedPriceDeploy(
+    emit FixedPeriodDeploy(
       addr,
       _name,
       _symbol,
       _bURI,
       _erc20,
+      platform,
+      _beneficiary,
       _initialRate,
       _startTime,
       _termOfValidity,
-      _maxSupply
+      _maxSupply,
+      platformRate
     );
   }
 
@@ -136,9 +156,7 @@ contract Factory {
     uint256 _rate,
     uint256 _maxSupply
   ) public payable {
-    IFixedPriceDeployer factory = IFixedPriceDeployer(
-      fixedPriceDeployer
-    );
+    IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
     address addr = factory.deployFixedPrice(
       _name,
       _symbol,

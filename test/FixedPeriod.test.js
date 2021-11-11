@@ -13,6 +13,7 @@ describe('Beeper Dao Contracts', function () {
       this.user1,
       this.user2,
       this.user3,
+      this.platform,
     ] = await hre.ethers.getSigners()
 
     this.ERC20Factory = await hre.ethers.getContractFactory('ERC20Token')
@@ -31,12 +32,11 @@ describe('Beeper Dao Contracts', function () {
     )
     this.Factory = await hre.ethers.getContractFactory('Factory')
 
-    //Deploy Factory & Three deployer & ERC20Token
+    //Deploy Factory & Four deployer & ERC20Token
     this.tokenBaseDeployer = await this.TokenBaseDeployer.deploy()
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
     this.FixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
-    this.FixedPriceDeployer =
-      await this.FixedPriceDeployer.deploy()
+    this.FixedPriceDeployer = await this.FixedPriceDeployer.deploy()
     this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
 
     await this.FixedPeriodDeployer.deployed()
@@ -53,8 +53,8 @@ describe('Beeper Dao Contracts', function () {
     )
   })
 
-  describe('FixPrice Period Test', () => {
-    describe('FixedPrice with erc20', () => {
+  describe('FixedPeriod Test', () => {
+    describe('FixedPeriod with erc20', () => {
       beforeEach(async () => {
         // price = slope * (termOfValidity - now)
 
@@ -69,37 +69,25 @@ describe('Beeper Dao Contracts', function () {
         this.slopeBN = this.initialRateBN.div(this.termOfValidityBN)
         this.slope = this.slopeBN.toString()
 
-        // console.log('slope', this.slope)
-        // console.log('constructor time', this.startTime)
-
-        this.constructorParameter = {
-          name: 'test_name',
-          symbol: 'test_symbol',
-          bURI: 'https://test_url.com/',
-          erc20: this.erc20.address,
-          initialRate: this.initialRate,
-          startTime: this.startTime,
-          termOfValidity: this.termOfValidity,
-          maxSupply: 100,
-        }
+        this.constructorParameter = [
+          'test_name',
+          'test_symbol',
+          'https://test_url.com/',
+          this.erc20.address,
+          this.initialRate,
+          this.startTime,
+          this.termOfValidity,
+          100,
+        ]
 
         const tx = await this.factory
           .connect(this.creator)
-          .fixedPeriodDeploy(
-            this.constructorParameter.name,
-            this.constructorParameter.symbol,
-            this.constructorParameter.bURI,
-            this.constructorParameter.erc20,
-            this.constructorParameter.initialRate,
-            this.constructorParameter.startTime,
-            this.constructorParameter.termOfValidity,
-            this.constructorParameter.maxSupply
-          )
+          .fixedPeriodDeploy(...this.constructorParameter)
 
         const receipt = await tx.wait()
         for (const event of receipt.events) {
           switch (event.event) {
-            case 'FixedPriceDeploy': {
+            case 'FixedPeriodDeploy': {
               this.fixedPriceAddr = event.args[0]
             }
           }
@@ -108,7 +96,7 @@ describe('Beeper Dao Contracts', function () {
         let fixedPricePeriodFactory = await hre.ethers.getContractFactory(
           'FixedPeriod'
         )
-        this.fixedPrice = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
+        this.fixedPeriod = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
       })
 
       describe('Mint Burn & Price Test', () => {
@@ -119,7 +107,7 @@ describe('Beeper Dao Contracts', function () {
           await network.provider.send('evm_mine')
 
           const price = ethers.utils.formatEther(
-            await this.fixedPrice.getCurrentCostToMint()
+            await this.fixedPeriod.getCurrentCostToMint()
           )
           let expectPrice = ethers.utils.formatEther(
             this.initialRateBN.sub(
@@ -136,7 +124,7 @@ describe('Beeper Dao Contracts', function () {
           await network.provider.send('evm_mine')
 
           await expect(
-            this.fixedPrice.getCurrentCostToMint()
+            this.fixedPeriod.getCurrentCostToMint()
           ).to.be.revertedWith('FixedPrice: not in time')
         })
         it('just begin time', async () => {
@@ -158,13 +146,13 @@ describe('Beeper Dao Contracts', function () {
             .approve(this.fixedPriceAddr, this.initialRate)
 
           // user 1 mint with token id 1
-          await expect(this.fixedPrice.connect(this.user1).mint())
-            .to.emit(this.fixedPrice, 'Mint')
+          await expect(this.fixedPeriod.connect(this.user1).mint())
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user1.address, 1)
 
           //user 3 mint with token id 2
-          await expect(this.fixedPrice.connect(this.user3).mint())
-            .to.emit(this.fixedPrice, 'Mint')
+          await expect(this.fixedPeriod.connect(this.user3).mint())
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user3.address, 2)
         })
 
@@ -172,9 +160,9 @@ describe('Beeper Dao Contracts', function () {
           // user 2 failed
 
           const price = ethers.utils.formatEther(
-            await this.fixedPrice.getCurrentCostToMint()
+            await this.fixedPeriod.getCurrentCostToMint()
           )
-          await expect(this.fixedPrice.connect(this.user2).mint()).to.be
+          await expect(this.fixedPeriod.connect(this.user2).mint()).to.be
             .reverted
         })
 
@@ -186,28 +174,28 @@ describe('Beeper Dao Contracts', function () {
             .approve(this.fixedPriceAddr, this.initialRate)
 
           // user 1 mint a token
-          await expect(this.fixedPrice.connect(this.user1).mint())
-            .to.emit(this.fixedPrice, 'Mint')
+          await expect(this.fixedPeriod.connect(this.user1).mint())
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user1.address, 1)
 
           const price = (
-            await this.fixedPrice.getCurrentCostToMint()
+            await this.fixedPeriod.getCurrentCostToMint()
           ).toString()
 
-          await this.fixedPrice
+          await this.fixedPeriod
             .connect(this.creator)
             .changeBeneficiary(this.user3.address)
 
           await expect(
-            this.fixedPrice.connect(this.user1).withdraw()
+            this.fixedPeriod.connect(this.user1).withdraw()
           ).to.be.revertedWith(
             `AccessControl: account ${this.user1.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
               ethers.utils.toUtf8Bytes('CREATOR')
             )}`
           )
 
-          await expect(this.fixedPrice.connect(this.user3).withdraw())
-            .to.emit(this.fixedPrice, 'Withdraw')
+          await expect(this.fixedPeriod.connect(this.user3).withdraw())
+            .to.emit(this.fixedPeriod, 'Withdraw')
             .withArgs(this.user3.address, price)
         })
 
@@ -222,20 +210,12 @@ describe('Beeper Dao Contracts', function () {
             .connect(this.user2)
             .approve(this.fixedPriceAddr, this.initialRate)
 
-          // setFeeParameters
-          this.platformRate = 5
-          await this.fixedPrice
-            .connect(this.creator)
-            .setFeeParameters(this.platform.address, this.platformRate)
-          expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
-          expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
-
           // user 1 mint a token
-          await expect(this.fixedPrice.connect(this.user1).mint())
-            .to.emit(this.fixedPrice, 'Mint')
+          await expect(this.fixedPeriod.connect(this.user1).mint())
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user1.address, 1)
-          await expect(this.fixedPrice.connect(this.user2).mint())
-            .to.emit(this.fixedPrice, 'Mint')
+          await expect(this.fixedPeriod.connect(this.user2).mint())
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user2.address, 2)
         })
 
@@ -255,69 +235,33 @@ describe('Beeper Dao Contracts', function () {
           await network.provider.send('evm_mine')
 
           await expect(
-            this.fixedPrice.getCurrentCostToMint()
+            this.fixedPeriod.getCurrentCostToMint()
           ).to.be.revertedWith('FixedPrice: not in time')
         })
       })
 
       describe('Public Info Check', () => {
         it('check base info', async () => {
-          expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
-          expect(await this.fixedPrice.erc20()).to.eq(this.erc20.address)
-          expect(await this.fixedPrice.maxSupply()).to.eq(
+          expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
+          expect(await this.fixedPeriod.erc20()).to.eq(this.erc20.address)
+          expect(await this.fixedPeriod.maxSupply()).to.eq(
             this.constructorParameter.maxSupply
           )
-          expect(await this.fixedPrice.platform()).to.eq(
+          expect(await this.fixedPeriod.platform()).to.eq(
             ethers.constants.AddressZero
           )
-          expect(await this.fixedPrice.platformRate()).to.eq(0)
+          expect(await this.fixedPeriod.platformRate()).to.eq(0)
         })
 
         it('only owner can set baseUrl', async () => {
           const newBaseUrl = 'https://newBaserul.com/'
           await expect(
-            this.fixedPrice.setBaseURI(newBaseUrl)
+            this.fixedPeriod.setBaseURI(newBaseUrl)
           ).to.be.revertedWith(
             `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
               ethers.utils.toUtf8Bytes('CREATOR')
             )}`
           )
-        })
-
-        describe('setFeeParameters', () => {
-          it('reverted when not the owner', async () => {
-            this.platformRate = 5
-
-            await expect(
-              this.fixedPrice.setFeeParameters(
-                this.platform.address,
-                this.platformRate
-              )
-            ).to.be.revertedWith(
-              `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
-                ethers.utils.toUtf8Bytes('CREATOR')
-              )}`
-            )
-          })
-
-          it('can only setFeeParameters once', async () => {
-            this.platformRate = 5
-            await this.fixedPrice
-              .connect(this.creator)
-              .setFeeParameters(this.platform.address, this.platformRate)
-            expect(await this.fixedPrice.platform()).to.eq(
-              this.platform.address
-            )
-            expect(await this.fixedPrice.platformRate()).to.eq(
-              this.platformRate
-            )
-
-            await expect(
-              this.fixedPrice
-                .connect(this.creator)
-                .setFeeParameters(this.platform.address, this.platformRate)
-            ).to.be.revertedWith('has set beneficiary & rate')
-          })
         })
       })
     })
@@ -381,31 +325,31 @@ describe('Beeper Dao Contracts', function () {
         let fixedPricePeriodFactory = await hre.ethers.getContractFactory(
           'FixedPeriod'
         )
-        this.fixedPrice = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
+        this.fixedPeriod = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
       })
 
       describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
         it('check base info', async () => {
-          expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
-          expect(await this.fixedPrice.erc20()).to.eq(
+          expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
+          expect(await this.fixedPeriod.erc20()).to.eq(
             ethers.constants.AddressZero
           )
-          // expect(await this.fixedPrice.rate()).to.eq(
+          // expect(await this.fixedPeriod.rate()).to.eq(
           //   ethers.utils.parseEther(this.initialRate)
           // )
-          expect(await this.fixedPrice.maxSupply()).to.eq(
+          expect(await this.fixedPeriod.maxSupply()).to.eq(
             this.constructorParameter.maxSupply
           )
-          expect(await this.fixedPrice.platform()).to.eq(
+          expect(await this.fixedPeriod.platform()).to.eq(
             ethers.constants.AddressZero
           )
-          expect(await this.fixedPrice.platformRate()).to.eq(0)
+          expect(await this.fixedPeriod.platformRate()).to.eq(0)
         })
 
         it('only owner can set baseUrl', async () => {
           const newBaseUrl = 'https://newBaserul.com/'
           await expect(
-            this.fixedPrice.setBaseURI(newBaseUrl)
+            this.fixedPeriod.setBaseURI(newBaseUrl)
           ).to.be.revertedWith(
             `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
               ethers.utils.toUtf8Bytes('CREATOR')
@@ -418,7 +362,7 @@ describe('Beeper Dao Contracts', function () {
             this.platformRate = 5
 
             await expect(
-              this.fixedPrice.setFeeParameters(
+              this.fixedPeriod.setFeeParameters(
                 this.platform.address,
                 this.platformRate
               )
@@ -431,18 +375,18 @@ describe('Beeper Dao Contracts', function () {
 
           it('can only setFeeParameters once', async () => {
             this.platformRate = 5
-            await this.fixedPrice
+            await this.fixedPeriod
               .connect(this.creator)
               .setFeeParameters(this.platform.address, this.platformRate)
-            expect(await this.fixedPrice.platform()).to.eq(
+            expect(await this.fixedPeriod.platform()).to.eq(
               this.platform.address
             )
-            expect(await this.fixedPrice.platformRate()).to.eq(
+            expect(await this.fixedPeriod.platformRate()).to.eq(
               this.platformRate
             )
 
             await expect(
-              this.fixedPrice
+              this.fixedPeriod
                 .connect(this.creator)
                 .setFeeParameters(this.platform.address, this.platformRate)
             ).to.be.revertedWith('has set beneficiary & rate')
@@ -459,23 +403,23 @@ describe('Beeper Dao Contracts', function () {
 
           // user 1 mint with token id 1
           await expect(
-            this.fixedPrice.connect(this.user1).mintEth(this.options)
+            this.fixedPeriod.connect(this.user1).mintEth(this.options)
           )
-            .to.emit(this.fixedPrice, 'Mint')
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user1.address, 1)
 
           //user 3 mint with token id 2
           await expect(
-            this.fixedPrice.connect(this.user3).mintEth(this.options)
+            this.fixedPeriod.connect(this.user3).mintEth(this.options)
           )
-            .to.emit(this.fixedPrice, 'Mint')
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user3.address, 2)
         })
 
         it('reverted when receive erc20 failed', async () => {
           // user 2 failed
           await expect(
-            this.fixedPrice.connect(this.user2).mintEth(),
+            this.fixedPeriod.connect(this.user2).mintEth(),
             this.shortOptions
           ).to.be.reverted
         })
@@ -483,65 +427,43 @@ describe('Beeper Dao Contracts', function () {
         it('succeeds when user1 mint (no platform fee)', async () => {
           // user 1 mint a token
           await expect(
-            this.fixedPrice.connect(this.user1).mintEth(this.options)
+            this.fixedPeriod.connect(this.user1).mintEth(this.options)
           )
-            .to.emit(this.fixedPrice, 'Mint')
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user1.address, 1)
 
           await expect(
-            this.fixedPrice.connect(this.user1).withdraw()
+            this.fixedPeriod.connect(this.user1).withdraw()
           ).to.be.revertedWith(
             `AccessControl: account ${this.user1.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
               ethers.utils.toUtf8Bytes('CREATOR')
             )}`
           )
 
-          await expect(this.fixedPrice.connect(this.creator).withdraw())
-            .to.emit(this.fixedPrice, 'Withdraw')
+          await expect(this.fixedPeriod.connect(this.creator).withdraw())
+            .to.emit(this.fixedPeriod, 'Withdraw')
             .withArgs(this.creator.address, this.initialRate.toString())
 
           //user 3 mint with token id 2
           await expect(
-            this.fixedPrice.connect(this.user3).mintEth(this.options)
+            this.fixedPeriod.connect(this.user3).mintEth(this.options)
           )
-            .to.emit(this.fixedPrice, 'Mint')
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user3.address, 2)
 
           //user 3 mint with token id 3
           await expect(
-            this.fixedPrice.connect(this.user3).mintEth(this.options)
+            this.fixedPeriod.connect(this.user3).mintEth(this.options)
           )
-            .to.emit(this.fixedPrice, 'Mint')
+            .to.emit(this.fixedPeriod, 'Mint')
             .withArgs(this.user3.address, 3)
 
-          await expect(this.fixedPrice.connect(this.creator).withdraw())
-            .to.emit(this.fixedPrice, 'Withdraw')
+          await expect(this.fixedPeriod.connect(this.creator).withdraw())
+            .to.emit(this.fixedPeriod, 'Withdraw')
             .withArgs(
               this.creator.address,
               (this.initialRateBN * 2).toString().toString()
             )
-        })
-
-        it('succeeds when user mint (with platform fee)', async () => {
-          // setFeeParameters
-          this.platformRate = 5
-          await this.fixedPrice
-            .connect(this.creator)
-            .setFeeParameters(this.platform.address, this.platformRate)
-          expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
-          expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
-
-          // user 1 mint a token
-          await expect(
-            this.fixedPrice.connect(this.user1).mintEth(this.options)
-          )
-            .to.emit(this.fixedPrice, 'Mint')
-            .withArgs(this.user1.address, 1)
-          await expect(
-            this.fixedPrice.connect(this.user2).mintEth(this.options)
-          )
-            .to.emit(this.fixedPrice, 'Mint')
-            .withArgs(this.user2.address, 2)
         })
       })
     })

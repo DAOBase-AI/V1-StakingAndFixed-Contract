@@ -17,8 +17,6 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
 
-  bytes32 public constant CREATOR = keccak256("CREATOR");
-
   uint256 public initialRate; // price rate of erc20 tokens/PASS
   uint256 public startTime;
   uint256 public termOfValidity;
@@ -46,38 +44,53 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     string memory _bURI,
     address _erc20,
     address payable _platform,
+    address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _termOfValidity,
     uint256 _maxSupply,
     uint256 _platformRate
   ) ERC721(_name, _symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    _setupRole(CREATOR, tx.origin);
+    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin); //contract owner is the creator
     _setupBasicInfo(
       _bURI,
+      tx.origin,
       _erc20,
+      _beneficiary,
       _initialRate,
       _startTime,
       _termOfValidity,
       _maxSupply
     );
-    _setupPlatformParm(tx.origin, _platform, _platformRate);
+    _setupPlateformParm(_platform, _platformRate);
   }
 
   // only contract owner can setTokenURI
-  function setBaseURI(string memory baseURI_) public onlyRole(CREATOR) {
+  function setBaseURI(string memory baseURI_)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     _baseURIextended = baseURI_;
+  }
+
+  function _setupPlateformParm(address payable _platform, uint256 _platformRate)
+    internal
+  {
+    platform = _platform;
+    platformRate = _platformRate;
   }
 
   function _setupBasicInfo(
     string memory _bURI,
+    address _owner,
     address _erc20,
+    address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _termOfValidity,
     uint256 _maxSupply
   ) internal {
+    owner = _owner;
     _baseURIextended = _bURI;
     erc20 = _erc20;
     initialRate = _initialRate;
@@ -86,19 +99,10 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     endTime = _startTime + _termOfValidity;
     slope = _initialRate / _termOfValidity;
     maxSupply = _maxSupply;
+    beneficiary = _beneficiary;
   }
 
   // commission account and rate initilization
-  function _setupPlatformParm(
-    address _owner,
-    address payable _platform,
-    uint256 _platformRate
-  ) internal {
-    owner = _owner; // the creator of DAO will be the owner of PASS contract
-    beneficiary = payable(owner);
-    platform = _platform;
-    platformRate = _platformRate;
-  }
 
   function _baseURI() internal view virtual override returns (string memory) {
     return _baseURIextended;
@@ -120,8 +124,11 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     return initialRate - (slope * (block.timestamp - startTime));
   }
 
-  function changeBeneficiary(address payable _newBeneficiary) public {
-    grantRole(CREATOR, _newBeneficiary);
+  function changeBeneficiary(address payable _newBeneficiary)
+    public
+    nonReentrant
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     beneficiary = _newBeneficiary;
   }
 
@@ -160,13 +167,13 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   // only contract owner can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(CREATOR)
+    onlyRole(DEFAULT_ADMIN_ROLE)
   {
     _setTokenURI(tokenId, _tokenURI);
   }
 
   // user buy PASS from contract with specific erc20 tokens
-  function mint() public returns (uint256 tokenId) {
+  function mint() public nonReentrant returns (uint256 tokenId) {
     require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
     require((tokenIdTracker.current() <= maxSupply), "exceeds maximum supply");
     uint256 rate = _getCurrentCostToMint();
@@ -209,12 +216,12 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
 
   // owner withdraw erc20 tokens from contract
   // only contract owner can withdraw reserve of erc20 tokens
-  function withdraw() public nonReentrant onlyRole(CREATOR) {
+  function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
-      emit Withdraw(beneficiary, _getBalance());
-
-      (bool success, ) = payable(beneficiary).call{value: _getBalance()}("");
+      (bool success, ) = beneficiary.call{value: _getBalance()}("");
       require(success, "Failed to send Ether");
+
+      emit Withdraw(beneficiary, _getBalance());
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
       IERC20(erc20).safeTransfer(beneficiary, amount); // transfer erc20 tokens to contract owner address
