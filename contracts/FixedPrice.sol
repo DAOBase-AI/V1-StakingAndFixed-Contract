@@ -17,8 +17,6 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
 
-  bytes32 public constant CREATOR = keccak256("CREATOR");
-
   uint256 public rate; // price rate of erc20 tokens/PASS
   uint256 public maxSupply; // Maximum supply of PASS
   address public owner; // contract owner is normally the creator
@@ -41,32 +39,46 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
+    address payable _platform,
+    address payable _beneficiary,
     uint256 _rate,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    uint256 _platformRate
   ) ERC721(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    _setupRole(CREATOR, tx.origin);
-    owner = tx.origin; // the creator of DAO will be the owner of PASS contract
-    _baseURIextended = _bURI;
-    erc20 = _erc20;
-    rate = _rate;
-    maxSupply = _maxSupply;
-    beneficiary = payable(owner);
+    _setupBasicInfo(_bURI, tx.origin, _erc20, _beneficiary, _rate, _maxSupply);
+    _setupPlateformParm(_platform, _platformRate);
   }
 
   // only contract owner can setTokenURI
-  function setBaseURI(string memory baseURI_) public onlyRole(CREATOR) {
+  function setBaseURI(string memory baseURI_)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     _baseURIextended = baseURI_;
   }
 
-  // commission account and rate initilization
-  function setFeeParameters(address payable _platform, uint256 _platformRate)
-    public
-    onlyRole(CREATOR)
+  function _setupPlateformParm(address payable _platform, uint256 _platformRate)
+    internal
   {
-    require(platform == address(0), "has set beneficiary & rate");
     platform = _platform;
     platformRate = _platformRate;
+  }
+
+  function _setupBasicInfo(
+    string memory _bURI,
+    address _owner,
+    address _erc20,
+    address payable _beneficiary,
+    uint256 _rate,
+    uint256 _maxSupply
+  ) internal {
+    _baseURIextended = _bURI;
+    owner = _owner;
+    erc20 = _erc20;
+    rate = _rate;
+    maxSupply = _maxSupply;
+    beneficiary = _beneficiary;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -77,8 +89,11 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     return address(this).balance;
   }
 
-  function changeBeneficiary(address payable _newBeneficiary) public {
-    grantRole(CREATOR, _newBeneficiary);
+  function changeBeneficiary(address payable _newBeneficiary)
+    public
+    nonReentrant
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     beneficiary = _newBeneficiary;
   }
 
@@ -117,13 +132,13 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   // only contract owner can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(CREATOR)
+    onlyRole(DEFAULT_ADMIN_ROLE)
   {
     _setTokenURI(tokenId, _tokenURI);
   }
 
   // user buy PASS from contract with specific erc20 tokens
-  function mint() public returns (uint256 tokenId) {
+  function mint() public nonReentrant returns (uint256 tokenId) {
     require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
     require((tokenIdTracker.current() <= maxSupply), "exceeds maximum supply");
 
@@ -162,9 +177,9 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // owner withdraw erc20 tokens from contract
-  // only contract owner can withdraw reserve of erc20 tokens
-  function withdraw() public nonReentrant onlyRole(CREATOR) {
+  // withdraw erc20 tokens from contract
+  // anyone can withdraw reserve of erc20 tokens to beneficiary
+  function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
       emit Withdraw(beneficiary, _getBalance());
 

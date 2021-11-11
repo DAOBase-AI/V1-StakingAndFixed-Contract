@@ -64,8 +64,11 @@ contract Factory is Ownable {
     string _symbol,
     string _bURI,
     address _erc20,
+    address _platform,
+    address _beneficiary,
     uint256 _rate,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    uint256 _platformRate
   );
 
   // set up the platform commission account
@@ -153,8 +156,11 @@ contract Factory is Ownable {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
+    address payable _platform,
+    address payable _beneficiary,
     uint256 _rate,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    uint256 _platformRate
   ) public payable {
     IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
     address addr = factory.deployFixedPrice(
@@ -162,8 +168,11 @@ contract Factory is Ownable {
       _symbol,
       _bURI,
       _erc20,
+      _platform,
+      _beneficiary,
       _rate,
-      _maxSupply
+      _maxSupply,
+      _platformRate
     );
     emit FixedPriceDeploy(
       addr,
@@ -171,8 +180,11 @@ contract Factory is Ownable {
       _symbol,
       _bURI,
       _erc20,
+      _platform,
+      _beneficiary,
       _rate,
-      _maxSupply
+      _maxSupply,
+      _platformRate
     );
   }
 }

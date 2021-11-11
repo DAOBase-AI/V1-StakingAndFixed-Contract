@@ -7,7 +7,10 @@ interface IFixedPriceDeployer {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
+    address payable _platform,
+    address payable _beneficiary,
     uint256 _rate,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    uint256 _platformRate
   ) external returns (address);
 }

@@ -90,8 +90,8 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     uint256 _termOfValidity,
     uint256 _maxSupply
   ) internal {
-    owner = _owner;
     _baseURIextended = _bURI;
+    owner = _owner;
     erc20 = _erc20;
     initialRate = _initialRate;
     startTime = _startTime;
@@ -214,8 +214,8 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // owner withdraw erc20 tokens from contract
-  // only contract owner can withdraw reserve of erc20 tokens
+  // withdraw erc20 tokens from contract
+  // anyone can withdraw reserve of erc20 tokens to beneficiary
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
       (bool success, ) = beneficiary.call{value: _getBalance()}("");
