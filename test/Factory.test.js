@@ -23,24 +23,24 @@ describe('Beeper Dao Contracts', function () {
     this.NFTBaseDeployer = await hre.ethers.getContractFactory(
       'NFTBaseDeployer'
     )
-    this.FixedPricePeriodDeployer = await hre.ethers.getContractFactory(
-      'FixedPricePeriodDeployer'
+    this.FixedPeriodDeployer = await hre.ethers.getContractFactory(
+      'FixedPeriodDeployer'
     )
-    this.FixedPricePeriodicDeployer = await hre.ethers.getContractFactory(
-      'FixedPricePeriodicDeployer'
+    this.FixedPriceDeployer = await hre.ethers.getContractFactory(
+      'FixedPriceDeployer'
     )
     this.Factory = await hre.ethers.getContractFactory('Factory')
 
     //Deploy Factory & Three deployer & ERC20Token
     this.tokenBaseDeployer = await this.TokenBaseDeployer.deploy()
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
-    this.FixedPricePeriodDeployer = await this.FixedPricePeriodDeployer.deploy()
-    this.FixedPricePeriodicDeployer =
-      await this.FixedPricePeriodicDeployer.deploy()
+    this.FixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
+    this.FixedPriceDeployer =
+      await this.FixedPriceDeployer.deploy()
     this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
 
-    await this.FixedPricePeriodDeployer.deployed()
-    await this.FixedPricePeriodicDeployer.deployed()
+    await this.FixedPeriodDeployer.deployed()
+    await this.FixedPriceDeployer.deployed()
     await this.nftBaseDeployer.deployed()
     await this.tokenBaseDeployer.deployed()
     await this.erc20.deployed()
@@ -48,8 +48,8 @@ describe('Beeper Dao Contracts', function () {
     this.factory = await this.Factory.deploy(
       this.tokenBaseDeployer.address,
       this.nftBaseDeployer.address,
-      this.FixedPricePeriodDeployer.address,
-      this.FixedPricePeriodDeployer.address
+      this.FixedPeriodDeployer.address,
+      this.FixedPeriodDeployer.address
     )
   })
 })

@@ -3,25 +3,25 @@ pragma solidity ^0.8.4;
 
 import "./interfaces/ITokenBaseDeployer.sol";
 import "./interfaces/INFTBaseDeployer.sol";
-import "./interfaces/IFixedPricePeriodDeployer.sol";
-import "./interfaces/IFixedPricePeriodicDeployer.sol";
+import "./interfaces/IFixedPeriodDeployer.sol";
+import "./interfaces/IFixedPriceDeployer.sol";
 
 contract Factory {
   address private tokenBaseDeployer;
   address private nftBaseDeployer;
-  address private fixedPricePeriodDeployer;
-  address private fixedPricePeriodicDeployer;
+  address private fixedPeriodDeployer;
+  address private fixedPriceDeployer;
 
   constructor(
     address _tokenBaseDeployer,
     address _nftBaseDeployer,
-    address _fixedPricePeriodDeployer,
-    address _fixedPricePeriodicDeployer
+    address _fixedPeriodDeployer,
+    address _fixedPriceDeployer
   ) {
     tokenBaseDeployer = _tokenBaseDeployer;
     nftBaseDeployer = _nftBaseDeployer;
-    fixedPricePeriodDeployer = _fixedPricePeriodDeployer;
-    fixedPricePeriodicDeployer = _fixedPricePeriodicDeployer;
+    fixedPeriodDeployer = _fixedPeriodDeployer;
+    fixedPriceDeployer = _fixedPriceDeployer;
   }
 
   event TokenBaseDeploy(
@@ -39,7 +39,7 @@ contract Factory {
     string _bURI,
     address _erc721
   );
-  event FixedPricePeriodDeploy(
+  event FixedPriceDeploy(
     address indexed _addr,
     string _name,
     string _symbol,
@@ -51,7 +51,7 @@ contract Factory {
     uint256 _maxSupply
   );
 
-  event FixedPricePeriodicDeploy(
+  event FixedPriceDeploy(
     address indexed _addr,
     string _name,
     string _symbol,
@@ -91,30 +91,31 @@ contract Factory {
     emit NFTBaseDeploy(addr, _name, _symbol, _bURI, _erc721);
   }
 
-  function fixedPricePeriodDeploy(
+  function fixedPeriodDeploy(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
     address _erc20,
+    address payable _platform,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _termOfValidity,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    uint256 _platformRate
   ) public payable {
-    IFixedPricePeriodDeployer factory = IFixedPricePeriodDeployer(
-      fixedPricePeriodDeployer
-    );
-    address addr = factory.deployFixedPrice(
+    address addr = IFixedPeriodDeployer(fixedPeriodDeployer).deployFixedPeriod(
       _name,
       _symbol,
       _bURI,
       _erc20,
+      _platform,
       _initialRate,
       _startTime,
       _termOfValidity,
-      _maxSupply
+      _maxSupply,
+      _platformRate
     );
-    emit FixedPricePeriodDeploy(
+    emit FixedPriceDeploy(
       addr,
       _name,
       _symbol,
@@ -127,7 +128,7 @@ contract Factory {
     );
   }
 
-  function fixedPricePeriodicDeploy(
+  function fixedPriceDeploy(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
@@ -135,8 +136,8 @@ contract Factory {
     uint256 _rate,
     uint256 _maxSupply
   ) public payable {
-    IFixedPricePeriodicDeployer factory = IFixedPricePeriodicDeployer(
-      fixedPricePeriodicDeployer
+    IFixedPriceDeployer factory = IFixedPriceDeployer(
+      fixedPriceDeployer
     );
     address addr = factory.deployFixedPrice(
       _name,
@@ -146,7 +147,7 @@ contract Factory {
       _rate,
       _maxSupply
     );
-    emit FixedPricePeriodicDeploy(
+    emit FixedPriceDeploy(
       addr,
       _name,
       _symbol,

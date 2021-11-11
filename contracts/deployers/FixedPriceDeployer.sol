@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-interface IFixedPricePeriodicDeployer {
+import "../FixedPrice.sol";
+
+contract FixedPriceDeployer {
   function deployFixedPrice(
     string memory _name,
     string memory _symbol,
@@ -9,5 +11,10 @@ interface IFixedPricePeriodicDeployer {
     address _erc20,
     uint256 _rate,
     uint256 _maxSupply
-  ) external returns (address);
+  ) public returns (address) {
+    address addr = address(
+      new FixedPrice(_name, _symbol, _bURI, _erc20, _rate, _maxSupply)
+    );
+    return addr;
+  }
 }

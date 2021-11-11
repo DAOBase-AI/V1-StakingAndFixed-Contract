@@ -11,29 +11,29 @@ async function main() {
     'TokenBaseDeployer'
   )
   const NFTBaseDeployer = await hre.ethers.getContractFactory('NFTBaseDeployer')
-  const FixedPricePeriodDeployer = await hre.ethers.getContractFactory(
-    'FixedPricePeriodDeployer'
+  const FixedPeriodDeployer = await hre.ethers.getContractFactory(
+    'FixedPeriodDeployer'
   )
-  const FixedPricePeriodicDeployer = await hre.ethers.getContractFactory(
-    'FixedPricePeriodicDeployer'
+  const FixedPriceDeployer = await hre.ethers.getContractFactory(
+    'FixedPriceDeployer'
   )
 
   const tokenBaseDeployer = await TokenBaseDeployer.deploy()
   const nftBaseDeployer = await NFTBaseDeployer.deploy()
-  const fixedPricePeriodDeployer = await FixedPricePeriodDeployer.deploy()
-  const fixedPricePeriodicDeployer = await FixedPricePeriodicDeployer.deploy()
+  const fixedPeriodDeployer = await FixedPeriodDeployer.deploy()
+  const fixedPriceDeployer = await FixedPriceDeployer.deploy()
   await tokenBaseDeployer.deployed()
   await nftBaseDeployer.deployed()
-  await fixedPricePeriodDeployer.deployed()
-  await fixedPricePeriodicDeployer.deployed()
+  await fixedPeriodDeployer.deployed()
+  await fixedPriceDeployer.deployed()
 
   console.log('TokenBaseDeployer address: ' + tokenBaseDeployer.address)
   console.log('NFTBaseDeployer address: ' + nftBaseDeployer.address)
   console.log(
-    'FixedPricePeriodDeployer address: ' + fixedPricePeriodDeployer.address
+    'FixedPeriodDeployer address: ' + fixedPeriodDeployer.address
   )
   console.log(
-    'FixedPricePeriodicDeployer address: ' + fixedPricePeriodicDeployer.address
+    'FixedPriceDeployer address: ' + fixedPriceDeployer.address
   )
 
   // Deploy Factory
@@ -41,8 +41,8 @@ async function main() {
   const factory = await Factory.deploy(
     tokenBaseDeployer.address,
     nftBaseDeployer.address,
-    fixedPricePeriodDeployer.address,
-    fixedPricePeriodicDeployer.address
+    fixedPeriodDeployer.address,
+    fixedPriceDeployer.address
   )
   await factory.deployed()
   console.log('Factory address: ' + factory.address)

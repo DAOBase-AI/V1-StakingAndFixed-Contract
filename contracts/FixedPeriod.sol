@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
+contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;
@@ -19,8 +19,12 @@ contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
 
   bytes32 public constant CREATOR = keccak256("CREATOR");
 
-  uint256 public rate; // price rate of erc20 tokens/PASS
+  uint256 public initialRate; // price rate of erc20 tokens/PASS
+  uint256 public startTime;
+  uint256 public termOfValidity;
+  uint256 public endTime; // endTime = startTime + termOfValidity
   uint256 public maxSupply; // Maximum supply of PASS
+  uint256 public slope; // slope = initialRate / termOfValidity
   address public owner; // contract owner is normally the creator
   address public erc20; // erc20 token used to purchase PASS
   address payable public platform; // thePass platform's commission account
@@ -41,17 +45,24 @@ contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    uint256 _rate,
-    uint256 _maxSupply
+    address payable _platform,
+    uint256 _initialRate,
+    uint256 _startTime,
+    uint256 _termOfValidity,
+    uint256 _maxSupply,
+    uint256 _platformRate
   ) ERC721(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
     _setupRole(CREATOR, tx.origin);
-    owner = tx.origin; // the creator of DAO will be the owner of PASS contract
-    _baseURIextended = _bURI;
-    erc20 = _erc20;
-    rate = _rate;
-    maxSupply = _maxSupply;
-    beneficiary = payable(owner);
+    _setupBasicInfo(
+      _bURI,
+      _erc20,
+      _initialRate,
+      _startTime,
+      _termOfValidity,
+      _maxSupply
+    );
+    _setupPlatformParm(tx.origin, _platform, _platformRate);
   }
 
   // only contract owner can setTokenURI
@@ -59,12 +70,32 @@ contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
     _baseURIextended = baseURI_;
   }
 
+  function _setupBasicInfo(
+    string memory _bURI,
+    address _erc20,
+    uint256 _initialRate,
+    uint256 _startTime,
+    uint256 _termOfValidity,
+    uint256 _maxSupply
+  ) internal {
+    _baseURIextended = _bURI;
+    erc20 = _erc20;
+    initialRate = _initialRate;
+    startTime = _startTime;
+    termOfValidity = _termOfValidity;
+    endTime = _startTime + _termOfValidity;
+    slope = _initialRate / _termOfValidity;
+    maxSupply = _maxSupply;
+  }
+
   // commission account and rate initilization
-  function setFeeParameters(address payable _platform, uint256 _platformRate)
-    public
-    onlyRole(CREATOR)
-  {
-    require(platform == address(0), "has set beneficiary & rate");
+  function _setupPlatformParm(
+    address _owner,
+    address payable _platform,
+    uint256 _platformRate
+  ) internal {
+    owner = _owner; // the creator of DAO will be the owner of PASS contract
+    beneficiary = payable(owner);
     platform = _platform;
     platformRate = _platformRate;
   }
@@ -75,6 +106,18 @@ contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
 
   function _getBalance() internal view returns (uint256) {
     return address(this).balance;
+  }
+
+  function getCurrentCostToMint() public view returns (uint256 cost) {
+    return _getCurrentCostToMint();
+  }
+
+  function _getCurrentCostToMint() internal view returns (uint256) {
+    require(
+      (block.timestamp >= startTime) && (block.timestamp <= endTime),
+      "FixedPrice: not in time"
+    );
+    return initialRate - (slope * (block.timestamp - startTime));
   }
 
   function changeBeneficiary(address payable _newBeneficiary) public {
@@ -126,6 +169,7 @@ contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
   function mint() public returns (uint256 tokenId) {
     require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
     require((tokenIdTracker.current() <= maxSupply), "exceeds maximum supply");
+    uint256 rate = _getCurrentCostToMint();
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
@@ -145,6 +189,7 @@ contract FixedPricePeriodic is Context, AccessControl, ERC721, ReentrancyGuard {
     require(address(erc20) == address(0), "ERC20 address is NOT null.");
     require((tokenIdTracker.current() <= maxSupply), "Exceeds maximum supply");
 
+    uint256 rate = _getCurrentCostToMint();
     require(msg.value >= rate, "Not enough ether sent.");
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
