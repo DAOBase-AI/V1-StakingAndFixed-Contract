@@ -34,13 +34,12 @@ describe('Beeper Dao Contracts', function () {
     //Deploy Factory & Three deployer & ERC20Token
     this.tokenBaseDeployer = await this.TokenBaseDeployer.deploy()
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
-    this.FixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
-    this.FixedPriceDeployer =
-      await this.FixedPriceDeployer.deploy()
+    this.fixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
+    this.fixedPriceDeployer = await this.FixedPriceDeployer.deploy()
     this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
 
-    await this.FixedPeriodDeployer.deployed()
-    await this.FixedPriceDeployer.deployed()
+    await this.fixedPeriodDeployer.deployed()
+    await this.fixedPriceDeployer.deployed()
     await this.nftBaseDeployer.deployed()
     await this.tokenBaseDeployer.deployed()
     await this.erc20.deployed()
@@ -48,8 +47,8 @@ describe('Beeper Dao Contracts', function () {
     this.factory = await this.Factory.deploy(
       this.tokenBaseDeployer.address,
       this.nftBaseDeployer.address,
-      this.FixedPeriodDeployer.address,
-      this.FixedPeriodDeployer.address
+      this.fixedPeriodDeployer.address,
+      this.fixedPeriodDeployer.address
     )
   })
 })

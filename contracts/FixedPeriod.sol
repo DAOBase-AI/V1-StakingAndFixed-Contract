@@ -218,10 +218,11 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   // anyone can withdraw reserve of erc20 tokens to beneficiary
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
-      (bool success, ) = beneficiary.call{value: _getBalance()}("");
+      uint256 amount = _getBalance();
+      (bool success, ) = beneficiary.call{value: amount}("");
       require(success, "Failed to send Ether");
 
-      emit Withdraw(beneficiary, _getBalance());
+      emit Withdraw(beneficiary, amount);
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
       IERC20(erc20).safeTransfer(beneficiary, amount); // transfer erc20 tokens to contract owner address
