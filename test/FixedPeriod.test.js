@@ -1,6 +1,5 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
-const { ethers } = require('ethers')
 const { network } = require('hardhat')
 
 describe('Beeper Dao Contracts', function () {
@@ -52,17 +51,43 @@ describe('Beeper Dao Contracts', function () {
       this.fixedPeriodDeployer.address,
       this.fixedPriceDeployer.address
     )
+
+    this.getTimestampBeforeWithDelay = async () => {
+      return (
+        (
+          await hre.ethers.provider.getBlock(
+            (this.block = await hre.ethers.provider.getBlockNumber())
+          )
+        ).timestamp + 300
+      )
+    }
+
+    this.testPrice = async time => {
+      try {
+        await network.provider.send('evm_mine', [this.startTime + time])
+
+        let price = ethers.utils.formatEther(
+          await this.fixedPeriod.getCurrentCostToMint()
+        )
+        let expectPrice = ethers.utils.formatEther(
+          this.initialRateBN.sub(this.slopeBN.mul(ethers.BigNumber.from(time)))
+        )
+        expect(price).to.eq(expectPrice)
+      } catch (error) {
+        console.log(error)
+      }
+    }
   })
 
   describe('FixedPeriod Test (without platform fee)', () => {
-    beforeEach(async () => {
+    before(async () => {
       // price = slope * (termOfValidity - now)
 
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
       this.termOfValidityBN = ethers.BigNumber.from('3600')
       this.termOfValidity = this.termOfValidityBN.toString()
-      this.startTime = Date.parse(new Date()) / 1000 + 360
+      this.startTime = await this.getTimestampBeforeWithDelay()
       this.endTimeBN =
         ethers.BigNumber.from(this.startTime) + this.termOfValidityBN
       this.endTime = this.endTimeBN.toString()
@@ -125,27 +150,6 @@ describe('Beeper Dao Contracts', function () {
     })
 
     describe('Mint Burn (Price Period decline) Test', () => {
-      const testPrice = async time => {
-        try {
-          await network.provider.send('evm_setNextBlockTimestamp', [
-            this.startTime + time,
-          ])
-          await network.provider.send('evm_mine')
-
-          const price = ethers.utils.formatEther(
-            await this.fixedPeriod.getCurrentCostToMint()
-          )
-          let expectPrice = ethers.utils.formatEther(
-            this.initialRateBN.sub(
-              this.slopeBN.mul(ethers.BigNumber.from(time))
-            )
-          )
-          expect(price).to.eq(expectPrice)
-        } catch (error) {
-          console.log(error)
-        }
-      }
-
       it('reverted when not begin', async () => {
         await network.provider.send('evm_setNextBlockTimestamp', [
           this.startTime - 100,
@@ -157,10 +161,10 @@ describe('Beeper Dao Contracts', function () {
         ).to.be.revertedWith('FixedPrice: not in time')
       })
       it('just begin time', async () => {
-        await testPrice(0)
+        await this.testPrice(0)
       })
       it('last 200 second', async () => {
-        await testPrice(200)
+        await this.testPrice(200)
       })
 
       it('mint succeeds when receive erc20', async () => {
@@ -174,12 +178,9 @@ describe('Beeper Dao Contracts', function () {
           .connect(this.user3)
           .approve(this.fixedPriceAddr, this.initialRate)
 
-        // user 1 mint with token id 1
         await expect(this.fixedPeriod.connect(this.user1).mint())
           .to.emit(this.fixedPeriod, 'Mint')
           .withArgs(this.user1.address, 1)
-
-        //user 3 mint with token id 2
         await expect(this.fixedPeriod.connect(this.user3).mint())
           .to.emit(this.fixedPeriod, 'Mint')
           .withArgs(this.user3.address, 2)
@@ -194,20 +195,7 @@ describe('Beeper Dao Contracts', function () {
         await expect(this.fixedPeriod.connect(this.user2).mint()).to.be.reverted
       })
 
-      it('succeeds when user1 mint (no platform fee)', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.initialRate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.fixedPriceAddr, this.initialRate)
-
-        // user 1 mint a token
-        await expect(this.fixedPeriod.connect(this.user1).mint())
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user1.address, 1)
-
-        const price = (await this.fixedPeriod.getCurrentCostToMint()).toString()
-
+      it('check beneficiary & withdraw', async () => {
         await expect(
           this.fixedPeriod
             .connect(this.user3)
@@ -224,43 +212,23 @@ describe('Beeper Dao Contracts', function () {
 
         await expect(this.fixedPeriod.connect(this.user1).withdraw())
           .to.emit(this.fixedPeriod, 'Withdraw')
-          .withArgs(this.user3.address, price)
-      })
-
-      it('succeeds when user1 mint (with platform fee)', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.initialRate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.fixedPriceAddr, this.initialRate)
-        await this.erc20.mint(this.user2.address, this.initialRate)
-        await this.erc20
-          .connect(this.user2)
-          .approve(this.fixedPriceAddr, this.initialRate)
-
-        // user 1 mint a token
-        await expect(this.fixedPeriod.connect(this.user1).mint())
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user1.address, 1)
-        await expect(this.fixedPeriod.connect(this.user2).mint())
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user2.address, 2)
+          .withArgs(
+            this.user3.address,
+            await this.erc20.balanceOf(this.fixedPeriod.address)
+          )
       })
 
       it('last 1600 second', async () => {
-        await testPrice(800)
+        await this.testPrice(800)
       })
 
       it('last 3422 second', async () => {
-        await testPrice(3422)
+        await this.testPrice(3422)
       })
 
       it('last 3700 second', async () => {
         let time = 3700
-        await network.provider.send('evm_setNextBlockTimestamp', [
-          this.startTime + time,
-        ])
-        await network.provider.send('evm_mine')
+        await network.provider.send('evm_mine', [this.startTime + time])
 
         await expect(
           this.fixedPeriod.getCurrentCostToMint()
@@ -269,8 +237,8 @@ describe('Beeper Dao Contracts', function () {
     })
   })
 
-  describe('FixedPeriod Test (whit olatform fee)', () => {
-    beforeEach(async () => {
+  describe('FixedPeriod Test (whit platform fee)', () => {
+    before(async () => {
       this.platformRate = 5
       await this.factory.setPlatform(this.platform.address)
       await this.factory.setPlatformRate(5)
@@ -279,7 +247,7 @@ describe('Beeper Dao Contracts', function () {
       this.initialRate = this.initialRateBN.toString()
       this.termOfValidityBN = ethers.BigNumber.from('3600')
       this.termOfValidity = this.termOfValidityBN.toString()
-      this.startTime = Date.parse(new Date()) / 1000 + 7200
+      this.startTime = await this.getTimestampBeforeWithDelay()
       this.endTimeBN =
         ethers.BigNumber.from(this.startTime) + this.termOfValidityBN
       this.endTime = this.endTimeBN.toString()
@@ -319,43 +287,18 @@ describe('Beeper Dao Contracts', function () {
     })
 
     describe('Mint Burn (Price Period decline) Test', () => {
-      const testPrice = async time => {
-        try {
-          await network.provider.send('evm_setNextBlockTimestamp', [
-            this.startTime + time,
-          ])
-          await network.provider.send('evm_mine')
-
-          const price = ethers.utils.formatEther(
-            await this.fixedPeriod.getCurrentCostToMint()
-          )
-          let expectPrice = ethers.utils.formatEther(
-            this.initialRateBN.sub(
-              this.slopeBN.mul(ethers.BigNumber.from(time))
-            )
-          )
-          // console.log(`price: ${price}, expectPrice: ${expectPrice}`);
-          expect(price).to.eq(expectPrice)
-        } catch (error) {
-          console.log(error)
-        }
-      }
-
       it('reverted when not begin', async () => {
-        await network.provider.send('evm_setNextBlockTimestamp', [
-          this.startTime - 100,
-        ])
-        await network.provider.send('evm_mine')
+        await network.provider.send('evm_mine', [this.startTime - 100])
 
         await expect(
           this.fixedPeriod.getCurrentCostToMint()
         ).to.be.revertedWith('FixedPrice: not in time')
       })
       it('just begin time', async () => {
-        await testPrice(0)
+        await this.testPrice(0)
       })
       it('last 200 second', async () => {
-        await testPrice(200)
+        await this.testPrice(200)
       })
 
       it('mint succeeds when receive erc20', async () => {
@@ -381,65 +324,50 @@ describe('Beeper Dao Contracts', function () {
       })
 
       it('last 1600 second', async () => {
-        await testPrice(1600)
-        it('mint reverted when receive erc20 failed', async () => {
-          // user 2 failed
+        await this.testPrice(1600)
+      })
 
-          const price = ethers.utils.formatEther(
-            await this.fixedPeriod.getCurrentCostToMint()
-          )
-          await expect(this.fixedPeriod.connect(this.user2).mint()).to.be
-            .reverted
-        })
+      it('mint reverted when receive erc20 failed', async () => {
+        // user 2 failed
+        await expect(this.fixedPeriod.connect(this.user2).mint()).to.be.reverted
+      })
 
-        it('succeeds mint & withdraaw', async () => {
-          // mock erc20 balance
-          await this.erc20.mint(this.user1.address, this.initialRate)
-          await this.erc20
-            .connect(this.user1)
-            .approve(this.fixedPriceAddr, this.initialRate)
+      it('check beneficiary & withdraw', async () => {
+        // mock erc20 balance
+        await this.erc20.mint(this.user3.address, this.initialRate)
+        await this.erc20
+          .connect(this.user3)
+          .approve(this.fixedPriceAddr, this.initialRate)
 
-          // user 1 mint a token
-          await expect(this.fixedPeriod.connect(this.user1).mint())
-            .to.emit(this.fixedPeriod, 'Mint')
-            .withArgs(this.user1.address, 1)
+        // user 3 mint a token with id 3
+        await expect(this.fixedPeriod.connect(this.user3).mint())
+          .to.emit(this.fixedPeriod, 'Mint')
+          .withArgs(this.user3.address, 3)
 
-          const price = (
-            await this.fixedPeriod.getCurrentCostToMint()
-          ).toString()
-
-          await expect(
-            this.fixedPeriod
-              .connect(this.user3)
-              .changeBeneficiary(this.user3.address)
-          ).to.be.revertedWith(
-            `AccessControl: account ${this.user3.address.toLowerCase()} is missing role ${
-              ethers.constants.HashZero
-            }`
-          )
-
-          await this.fixedPeriod
-            .connect(this.creator)
+        await expect(
+          this.fixedPeriod
+            .connect(this.user3)
             .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith(
+          `AccessControl: account ${this.user3.address.toLowerCase()} is missing role ${
+            ethers.constants.HashZero
+          }`
+        )
 
-          await expect(this.fixedPeriod.connect(this.user1).withdraw())
-            .to.emit(this.fixedPeriod, 'Withdraw')
-            .withArgs(
-              this.user3.address,
-              ethers.utils
-                .parseEther(price)
-                .sub(
-                  ethers.utils
-                    .parseEther(price)
-                    .mul(ethers.BigNumber.from(this.platformRate))
-                    .div(eth.BigNumber.from(100))
-                )
-            )
-        })
+        await this.fixedPeriod
+          .connect(this.creator)
+          .changeBeneficiary(this.user3.address)
+
+        await expect(this.fixedPeriod.connect(this.user1).withdraw())
+          .to.emit(this.fixedPeriod, 'Withdraw')
+          .withArgs(
+            this.user3.address,
+            await this.erc20.balanceOf(this.fixedPeriod.address)
+          )
       })
 
       it('last 3422 second', async () => {
-        await testPrice(3422)
+        await this.testPrice(3422)
       })
 
       it('last 3700 second', async () => {
@@ -457,12 +385,12 @@ describe('Beeper Dao Contracts', function () {
   })
 
   describe('FixedPeriod with ether (without platform fee)', () => {
-    beforeEach(async () => {
+    before(async () => {
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
       this.termOfValidityBN = ethers.BigNumber.from('3600')
       this.termOfValidity = this.termOfValidityBN.toString()
-      this.startTime = Date.parse(new Date()) / 1000 + 13600
+      this.startTime = await this.getTimestampBeforeWithDelay()
       this.endTimeBN =
         ethers.BigNumber.from(this.startTime) + this.termOfValidityBN
       this.endTime = this.endTimeBN.toString()
@@ -535,11 +463,12 @@ describe('Beeper Dao Contracts', function () {
     })
 
     describe('Mint & Burn', () => {
+      it('last 200 second', async () => {
+        await this.testPrice(200)
+      })
+
       it('succeeds when receive ether', async () => {
-        await network.provider.send('evm_setNextBlockTimestamp', [
-          this.startTime + 660,
-        ])
-        await network.provider.send('evm_mine')
+        await network.provider.send('evm_mine', [this.startTime + 300])
 
         // user 1 mint with token id 1
         await expect(this.fixedPeriod.connect(this.user1).mintEth(this.options))
@@ -564,7 +493,7 @@ describe('Beeper Dao Contracts', function () {
         // user 1 mint a token
         await expect(this.fixedPeriod.connect(this.user1).mintEth(this.options))
           .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user1.address, 1)
+          .withArgs(this.user1.address, 3)
 
         await expect(this.fixedPeriod.connect(this.user1).withdraw())
           .to.emit(this.fixedPeriod, 'Withdraw')
@@ -577,20 +506,18 @@ describe('Beeper Dao Contracts', function () {
         //user 3 mint with token id 2
         await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
           .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 2)
+          .withArgs(this.user3.address, 4)
 
         //user 3 mint with token id 3
         await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
           .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 3)
+          .withArgs(this.user3.address, 5)
 
         await expect(this.fixedPeriod.connect(this.creator).withdraw())
           .to.emit(this.fixedPeriod, 'Withdraw')
           .withArgs(
             this.beneficiary.address,
-            this.initialRateBN
-              .sub(this.initialRateBN.mul(this.platformRate))
-              .sub(ethers.BigNumber.from(2)).toString
+            await hre.ethers.provider.getBalance(this.fixedPeriod.address)
           )
       })
     })

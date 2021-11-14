@@ -156,11 +156,9 @@ contract Factory is Ownable {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    address payable _platform,
     address payable _beneficiary,
     uint256 _rate,
-    uint256 _maxSupply,
-    uint256 _platformRate
+    uint256 _maxSupply
   ) public payable {
     IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
     address addr = factory.deployFixedPrice(
@@ -168,11 +166,11 @@ contract Factory is Ownable {
       _symbol,
       _bURI,
       _erc20,
-      _platform,
+      platform,
       _beneficiary,
       _rate,
       _maxSupply,
-      _platformRate
+      platformRate
     );
     emit FixedPriceDeploy(
       addr,
@@ -180,11 +178,11 @@ contract Factory is Ownable {
       _symbol,
       _bURI,
       _erc20,
-      _platform,
+      platform,
       _beneficiary,
       _rate,
       _maxSupply,
-      _platformRate
+      platformRate
     );
   }
 }
