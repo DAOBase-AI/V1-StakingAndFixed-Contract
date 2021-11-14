@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
@@ -19,8 +18,6 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
-
-  bytes32 public constant CREATOR = keccak256("CREATOR");
 
   address public owner; // contract owner is normally the creator
   address public erc20; // creator's erc20 token address
@@ -42,7 +39,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
     address _erc20,
     uint256 _rate
   ) ERC721(_name, _symbol) {
-    _setupRole(CREATOR, tx.origin);
+    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
     owner = tx.origin; // the creator of DAO will be the owner of PASS contract
     _baseURIextended = _bURI;
     erc20 = _erc20;
@@ -50,7 +47,10 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   }
 
   // only contract owner can setTokenURI
-  function setBaseURI(string memory baseURI_) public onlyRole(CREATOR) {
+  function setBaseURI(string memory baseURI_)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     _baseURIextended = baseURI_;
   }
 
@@ -96,7 +96,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   // only contract owner can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(CREATOR)
+    onlyRole(DEFAULT_ADMIN_ROLE)
   {
     _setTokenURI(tokenId, _tokenURI);
   }

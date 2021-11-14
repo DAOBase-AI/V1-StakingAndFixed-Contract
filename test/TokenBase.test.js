@@ -1,6 +1,5 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
-const { ethers } = require('ethers')
 const { network } = require('hardhat')
 
 describe('Beeper Dao Contracts', function () {
@@ -35,8 +34,7 @@ describe('Beeper Dao Contracts', function () {
     this.tokenBaseDeployer = await this.TokenBaseDeployer.deploy()
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
     this.FixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
-    this.FixedPriceDeployer =
-      await this.FixedPriceDeployer.deploy()
+    this.FixedPriceDeployer = await this.FixedPriceDeployer.deploy()
     this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
 
     await this.FixedPeriodDeployer.deployed()
@@ -91,9 +89,9 @@ describe('Beeper Dao Contracts', function () {
       it('only owner can set baseUrl', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(this.tokenBase.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${ethers.utils.keccak256(
-            ethers.utils.toUtf8Bytes('CREATOR')
-          )}`
+          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${
+            hre.ethers.constants.HashZero
+          }`
         )
       })
     })

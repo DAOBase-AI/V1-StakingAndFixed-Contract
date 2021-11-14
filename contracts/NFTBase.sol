@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
@@ -17,8 +16,6 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
-
-  bytes32 public constant CREATOR = keccak256("CREATOR");
 
   address public owner; // contract owner is normally the creator
   address public erc721; // creator's NFT address
@@ -39,14 +36,17 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     string memory _bURI,
     address _erc721
   ) ERC721(_name, _symbol) {
-    _setupRole(CREATOR, tx.origin);
+    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
     owner = tx.origin; // the creator of DAO will be the owner of PASS contract
     _baseURIextended = _bURI;
     erc721 = _erc721;
   }
 
   // only contract owner can setTokenURI
-  function setBaseURI(string memory baseURI_) public onlyRole(CREATOR) {
+  function setBaseURI(string memory baseURI_)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     _baseURIextended = baseURI_;
   }
 
@@ -92,7 +92,7 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
   // only contract owner can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(CREATOR)
+    onlyRole(DEFAULT_ADMIN_ROLE)
   {
     _setTokenURI(tokenId, _tokenURI);
   }
@@ -102,7 +102,7 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     tokenId = tokenIdTracker.current(); // accumulate the token id
     vault[tokenId] = _tokenId; // associate PASS token id with NFT token id
 
-    IERC721(erc721).transferFrom(_msgSender(), address(this), _tokenId);
+    IERC721(erc721).safeTransferFrom(_msgSender(), address(this), _tokenId);
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
@@ -115,7 +115,11 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     require(tokenId != 0, "NFTBase: token id cannot be zero");
 
     super.burn(tokenId);
-    IERC721(erc721).transferFrom(address(this), _msgSender(), vault[tokenId]);
+    IERC721(erc721).safeTransferFrom(
+      address(this),
+      _msgSender(),
+      vault[tokenId]
+    );
     delete vault[tokenId];
 
     emit Burn(_msgSender(), tokenId);
