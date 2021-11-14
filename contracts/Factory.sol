@@ -87,7 +87,7 @@ contract Factory is Ownable {
     string memory _bURI,
     address _erc20,
     uint256 _rate
-  ) public payable {
+  ) public {
     ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
     //return the address of deployed NFT PASS contract
     address addr = factory.deployTokenBase(
@@ -105,7 +105,7 @@ contract Factory is Ownable {
     string memory _symbol,
     string memory _bURI,
     address _erc721
-  ) public payable {
+  ) public {
     INFTBaseDeployer factory = INFTBaseDeployer(nftBaseDeployer);
     address addr = factory.deployNFTBase(_name, _symbol, _bURI, _erc721);
     emit NFTBaseDeploy(addr, _name, _symbol, _bURI, _erc721);
@@ -121,7 +121,7 @@ contract Factory is Ownable {
     uint256 _startTime,
     uint256 _termOfValidity,
     uint256 _maxSupply
-  ) public payable {
+  ) public {
     address addr = IFixedPeriodDeployer(fixedPeriodDeployer).deployFixedPeriod(
       _name,
       _symbol,
@@ -159,7 +159,7 @@ contract Factory is Ownable {
     address payable _beneficiary,
     uint256 _rate,
     uint256 _maxSupply
-  ) public payable {
+  ) public {
     IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
     address addr = factory.deployFixedPrice(
       _name,
