@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-// import "@openzeppelin/contracts/access/Ownable.sol";
-
 // NFT staking based PASS contract. User stake creator's NFT to mint PASS and burn PASS to get creator's NFT back
 contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
   using Counters for Counters.Counter;
@@ -17,7 +15,7 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
 
-  address public owner; // contract owner is normally the creator
+  address public admin;  // contract admin
   address public erc721; // creator's NFT address
   mapping(uint256 => uint256) private vault; // associate the PASS id with staked NFT token id
 
@@ -37,12 +35,12 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     address _erc721
   ) ERC721(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    owner = tx.origin; // the creator of DAO will be the owner of PASS contract
+    admin = tx.origin; // the creator of DAO will be the admin of PASS contract
     _baseURIextended = _bURI;
     erc721 = _erc721;
   }
 
-  // only contract owner can setTokenURI
+  // only admin can set BaseURI
   function setBaseURI(string memory baseURI_)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
@@ -89,7 +87,7 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  // only contract owner can setTokenURI
+  // only admin can set TokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
@@ -110,16 +108,10 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // burn PASS to get creator's NFT back
+  // burn PASS to get staked NFT back
   function burn(uint256 tokenId) public virtual override {
-    require(tokenId != 0, "NFTBase: token id cannot be zero");
-
     super.burn(tokenId);
-    IERC721(erc721).safeTransferFrom(
-      address(this),
-      _msgSender(),
-      vault[tokenId]
-    );
+    IERC721(erc721).safeTransferFrom(address(this), _msgSender(), vault[tokenId]);
     delete vault[tokenId];
 
     emit Burn(_msgSender(), tokenId);
