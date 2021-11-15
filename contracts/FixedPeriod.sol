@@ -31,9 +31,9 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   uint256 public slope;                // slope = initialRate / salesValidity
   address public admin;                // contract admin
   address public erc20;                // erc20 token used to purchase PASS
-  address payable public platform;     // thePass platform's commission account
-  address payable public beneficiary;  // thePass benfit receiving account
-  uint256 public platformRate;         // thePass platform's commission rate in pph
+  address payable public platform;     // The Pass platform commission account
+  address payable public beneficiary;  // creator's beneficiary account
+  uint256 public platformRate;         // The Pass platform commission rate in pph
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -58,16 +58,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     uint256 _platformRate
   ) ERC721(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, tx.origin); // default contract admin is the creator
-    _setupBasicInfo(
-      _bURI,
-      tx.origin,
-      _erc20,
-      _beneficiary,
-      _initialRate,
-      _startTime,
-      _salesValidity,
-      _maxSupply
-    );
+    _setupBasicInfo(_bURI, tx.origin, _erc20, _beneficiary, _initialRate, _startTime, _salesValidity, _maxSupply);
     _setupPlateformParm(_platform, _platformRate);
   }
 
@@ -169,7 +160,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  // only contract admin can set TokenURI
+  // only contract admin can set Token URI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
@@ -218,7 +209,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // anyone can withdraw reserve of erc20 tokens/ETH to beneficiary
+  // anyone can withdraw reserve of erc20 tokens/ETH to creator's beneficiary account
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
       uint256 amount = _getBalance();
@@ -239,8 +230,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     view
     virtual
     override(AccessControl, ERC721)
-    returns (bool)
-  {
+    returns (bool){
     return super.supportsInterface(interfaceId);
   }
 }
