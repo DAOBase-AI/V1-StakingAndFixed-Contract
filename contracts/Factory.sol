@@ -71,13 +71,12 @@ contract Factory is Ownable {
     uint256 _platformRate
   );
 
-  // set up the platform commission account
-  function setPlatform(address payable _platform) public onlyOwner {
+  // set the platform account and commission rate, only operable by contract owner, _platformRate is in pph
+  function setPlatformParm(address payable _platform, uint256 _platformRate)
+    public
+    onlyOwner
+  {
     platform = _platform;
-  }
-
-  // set the platform commission rate, only operable by contract owner, _platformRate is in pph
-  function setPlatformRate(uint256 _platformRate) public onlyOwner {
     platformRate = _platformRate;
   }
 

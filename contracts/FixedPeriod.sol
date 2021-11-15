@@ -195,6 +195,12 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
 
     uint256 rate = _getCurrentCostToMint();
     require(msg.value >= rate, "Not enough ether sent.");
+    if (msg.value - rate > 0) {
+      (bool success, ) = payable(_msgSender()).call{value: msg.value - rate}(
+        ""
+      );
+      require(success, "Failed to send Ether");
+    }
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
