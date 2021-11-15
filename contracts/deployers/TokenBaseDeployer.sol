@@ -11,7 +11,13 @@ contract TokenBaseDeployer {
         address _erc20,
         uint256 _rate
     ) public returns (address) {
-        TokenBase tokenBase = new TokenBase(_name, _symbol, _bURI, _erc20, _rate);
+        TokenBase tokenBase = new TokenBase(
+            _name,
+            _symbol,
+            _bURI,
+            _erc20,
+            _rate
+        );
         address addr = address(tokenBase);
         return addr;
     }

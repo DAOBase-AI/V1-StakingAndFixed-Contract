@@ -8,8 +8,14 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
+/** 
+* @dev Users pay specific erc20 tokens to purchase PASS from creator DAO in a fixed period. 
+* The price of PASS decreases linerly over time.
+* Price formular: f(x) = initialRate - solpe * x  
+* f(x) = PASS Price when current time is x + startTime
+* startTime <= x <= endTime
+*/
+contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;
@@ -17,13 +23,17 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
 
-  uint256 public rate; // price rate of erc20 tokens/PASS
-  uint256 public maxSupply; // Maximum supply of PASS
-  address public admin; // contract admin
-  address public erc20; // erc20 token used to purchase PASS
-  address payable public platform; // thePass platform's commission account
-  address payable public beneficiary; // thePass benfit receiving account
-  uint256 public platformRate; // thePass platform's commission rate in pph
+  uint256 public initialRate;          // initial exchange rate of erc20 tokens/PASS
+  uint256 public startTime;            // start time of PASS sales
+  uint256 public salesValidity;        // Sales Validity in seconds
+  uint256 public endTime;              // endTime = startTime + salesValidity
+  uint256 public maxSupply;            // Maximum supply of PASS
+  uint256 public slope;                // slope = initialRate / salesValidity
+  address public admin;                // contract admin
+  address public erc20;                // erc20 token used to purchase PASS
+  address payable public platform;     // The Pass platform commission account
+  address payable public beneficiary;  // creator's beneficiary account
+  uint256 public platformRate;         // The Pass platform commission rate in pph
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -41,21 +51,15 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     address _erc20,
     address payable _platform,
     address payable _beneficiary,
-    uint256 _rate,
+    uint256 _initialRate,
+    uint256 _startTime,
+    uint256 _salesValidity,
     uint256 _maxSupply,
     uint256 _platformRate
   ) ERC721(_name, _symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    _setupBasicInfo(_bURI, tx.origin, _erc20, _beneficiary, _rate, _maxSupply);
+    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin); // default contract admin is the creator
+    _setupBasicInfo(_bURI, tx.origin, _erc20, _beneficiary, _initialRate, _startTime, _salesValidity, _maxSupply);
     _setupPlateformParm(_platform, _platformRate);
-  }
-
-  // only contract owner can setTokenURI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
-    _baseURIextended = baseURI_;
   }
 
   function _setupPlateformParm(address payable _platform, uint256 _platformRate)
@@ -70,15 +74,29 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     address _admin,
     address _erc20,
     address payable _beneficiary,
-    uint256 _rate,
+    uint256 _initialRate,
+    uint256 _startTime,
+    uint256 _salesValidity,
     uint256 _maxSupply
   ) internal {
     _baseURIextended = _bURI;
     admin = _admin;
     erc20 = _erc20;
-    rate = _rate;
+    initialRate = _initialRate;
+    startTime = _startTime;
+    salesValidity = _salesValidity;
+    endTime = _startTime + _salesValidity;
+    slope = _initialRate / _salesValidity;
     maxSupply = _maxSupply;
     beneficiary = _beneficiary;
+  }
+
+  // only contract admin can set Base URI
+  function setBaseURI(string memory baseURI_)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
+    _baseURIextended = baseURI_;
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -89,6 +107,19 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     return address(this).balance;
   }
 
+  function getCurrentCostToMint() public view returns (uint256 cost) {
+    return _getCurrentCostToMint();
+  }
+
+  function _getCurrentCostToMint() internal view returns (uint256) {
+    require(
+      (block.timestamp >= startTime) && (block.timestamp <= endTime),
+      "Not in the period"
+    );
+    return initialRate - (slope * (block.timestamp - startTime));
+  }
+
+  // only contract admin can change beneficiary account
   function changeBeneficiary(address payable _newBeneficiary)
     public
     nonReentrant
@@ -129,7 +160,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  // only contract owner can setTokenURI
+  // only contract admin can set Token URI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
@@ -139,8 +170,9 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   // user buy PASS from contract with specific erc20 tokens
   function mint() public nonReentrant returns (uint256 tokenId) {
-    require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
-    require((tokenIdTracker.current() <= maxSupply), "exceeds maximum supply");
+    require(address(erc20) != address(0), "ERC20 address is null.");
+    require((tokenIdTracker.current() <= maxSupply), "Exceeds maximum supply");
+    uint256 rate = _getCurrentCostToMint();
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
@@ -156,10 +188,12 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     tokenIdTracker.increment(); // automate token id increment
   }
 
+  // user buy PASS from contract with ETH
   function mintEth() public payable nonReentrant returns (uint256 tokenId) {
     require(address(erc20) == address(0), "ERC20 address is NOT null.");
     require((tokenIdTracker.current() <= maxSupply), "Exceeds maximum supply");
 
+    uint256 rate = _getCurrentCostToMint();
     require(msg.value >= rate, "Not enough ether sent.");
     if (msg.value - rate > 0) {
       (bool success, ) = payable(_msgSender()).call{value: msg.value - rate}(
@@ -170,30 +204,28 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    _safeMint(_msgSender(), tokenId); // mint PASS to user address
+    _safeMint(_msgSender(), tokenId);   // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
 
     if (platform != address(0)) {
-      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}(
-        ""
-      );
+      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}("");
       require(success, "Failed to send Ether");
     }
 
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // withdraw erc20 tokens from contract
-  // anyone can withdraw reserve of erc20 tokens to beneficiary
+  // anyone can withdraw reserve of erc20 tokens/ETH to creator's beneficiary account
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
-      emit Withdraw(beneficiary, _getBalance());
-
-      (bool success, ) = payable(beneficiary).call{value: _getBalance()}("");
+      uint256 amount = _getBalance();
+      (bool success, ) = beneficiary.call{value: amount}("");  // withdraw ETH to beneficiary account
       require(success, "Failed to send Ether");
+
+      emit Withdraw(beneficiary, amount);
     } else {
-      uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
-      IERC20(erc20).safeTransfer(beneficiary, amount); // transfer erc20 tokens to contract owner address
+      uint256 amount = IERC20(erc20).balanceOf(address(this));
+      IERC20(erc20).safeTransfer(beneficiary, amount);         // withdraw erc20 tokens to beneficiary account
 
       emit Withdraw(beneficiary, amount);
     }
@@ -204,8 +236,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     view
     virtual
     override(AccessControl, ERC721)
-    returns (bool)
-  {
+    returns (bool){
     return super.supportsInterface(interfaceId);
   }
 }
