@@ -8,16 +8,16 @@ import "./interfaces/IFixedPeriodDeployer.sol";
 import "./interfaces/IFixedPriceDeployer.sol";
 
 contract Factory is Ownable {
-  address private tokenBaseDeployer;
-  address private nftBaseDeployer;
-  address private fixedPeriodDeployer;
-  address private fixedPriceDeployer;
+  address private tokenBaseDeployer;    // staking erc20 tokens to mint PASS
+  address private nftBaseDeployer;      // staking erc721 tokens to mint PASS
+  address private fixedPeriodDeployer;  // pay erc20 tokens to mint PASS in a fixed period with linearly decreasing price
+  address private fixedPriceDeployer;   // pay erc20 tokens to mint PASS with fixed price
 
-  address payable private platform;
-  uint256 private platformRate;
+  address payable private platform;     // The PASS platform commission account
+  uint256 private platformRate;         // The PASS platform commission rate in pph
 
   constructor(
-    address _tokenBaseDeployer,
+    address _tokenBaseDeployer,         
     address _nftBaseDeployer,
     address _fixedPeriodDeployer,
     address _fixedPriceDeployer
@@ -29,33 +29,33 @@ contract Factory is Ownable {
   }
 
   event TokenBaseDeploy(
-    address indexed _addr, //address of deployed NFT PASS contract
-    string _name,
-    string _symbol,
-    string _bURI, //baseuri of NFT PASS
-    address _erc20,
-    uint256 _rate
+    address indexed _addr,   // address of deployed NFT PASS contract
+    string _name,            // name of PASS
+    string _symbol,          // symbol of PASS
+    string _bURI,            // baseuri of NFT PASS
+    address _erc20,          // address of staked erc20 tokens
+    uint256 _rate            // staking rate of erc20 tokens/PASS
   );
   event NFTBaseDeploy(
     address indexed _addr,
     string _name,
     string _symbol,
     string _bURI,
-    address _erc721
+    address _erc721          // address of staked erc721 tokens
   );
   event FixedPeriodDeploy(
     address indexed _addr,
     string _name,
     string _symbol,
     string _bURI,
-    address _erc20,
+    address _erc20,          // payment erc20 tokens
     address _platform,
-    address _beneficiary,
-    uint256 _initialRate,
-    uint256 _startTime,
-    uint256 _termOfValidity,
-    uint256 _maxSupply,
-    uint256 _platformRate
+    address _beneficiary,    // creator's beneficiary account to receive erc20 tokens
+    uint256 _initialRate,    // initial exchange rate of erc20 tokens/PASS
+    uint256 _startTime,      // start time of sales period
+    uint256 _salesValidity,  // period of sales validity
+    uint256 _maxSupply,      // maximum supply of PASS
+    uint256 _platformRate    
   );
 
   event FixedPriceDeploy(
@@ -63,7 +63,7 @@ contract Factory is Ownable {
     string _name,
     string _symbol,
     string _bURI,
-    address _erc20,
+    address _erc20,           // payment erc20 tokens
     address _platform,
     address _beneficiary,
     uint256 _rate,
@@ -90,13 +90,7 @@ contract Factory is Ownable {
   ) public {
     ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
     //return the address of deployed NFT PASS contract
-    address addr = factory.deployTokenBase(
-      _name,
-      _symbol,
-      _bURI,
-      _erc20,
-      _rate
-    );
+    address addr = factory.deployTokenBase(_name, _symbol, _bURI, _erc20, _rate);
     emit TokenBaseDeploy(addr, _name, _symbol, _bURI, _erc20, _rate);
   }
 
@@ -119,7 +113,7 @@ contract Factory is Ownable {
     address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _termOfValidity,
+    uint256 _salesValidity,
     uint256 _maxSupply
   ) public {
     address addr = IFixedPeriodDeployer(fixedPeriodDeployer).deployFixedPeriod(
@@ -131,7 +125,7 @@ contract Factory is Ownable {
       _beneficiary,
       _initialRate,
       _startTime,
-      _termOfValidity,
+      _salesValidity,
       _maxSupply,
       platformRate
     );
@@ -145,7 +139,7 @@ contract Factory is Ownable {
       _beneficiary,
       _initialRate,
       _startTime,
-      _termOfValidity,
+      _salesValidity,
       _maxSupply,
       platformRate
     );
