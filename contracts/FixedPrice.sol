@@ -17,13 +17,13 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
 
-  uint256 public rate;                  // exchange rate of erc20 tokens/PASS
-  uint256 public maxSupply;             // Maximum supply of PASS
-  address public admin;                 // contract admin is normally the creator
-  address public erc20;                 // erc20 token used to purchase PASS
-  address payable public platform;      // The Pass platform commission account
-  address payable public beneficiary;   // creator's beneficiary account
-  uint256 public platformRate;          // The Pass platform commission rate in pph
+  uint256 public rate; // price rate of erc20 tokens/PASS
+  uint256 public maxSupply; // Maximum supply of PASS
+  address public admin; // contract admin
+  address public erc20; // erc20 token used to purchase PASS
+  address payable public platform; // thePass platform's commission account
+  address payable public beneficiary; // thePass benfit receiving account
+  uint256 public platformRate; // thePass platform's commission rate in pph
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -50,8 +50,17 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     _setupPlateformParm(_platform, _platformRate);
   }
 
+  // only contract owner can setTokenURI
+  function setBaseURI(string memory baseURI_)
+    public
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
+    _baseURIextended = baseURI_;
+  }
+
   function _setupPlateformParm(address payable _platform, uint256 _platformRate)
-    internal{
+    internal
+  {
     platform = _platform;
     platformRate = _platformRate;
   }
@@ -72,13 +81,6 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     beneficiary = _beneficiary;
   }
 
-  // only contract admin can set Base URI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE){
-    _baseURIextended = baseURI_;
-  }
-
   function _baseURI() internal view virtual override returns (string memory) {
     return _baseURIextended;
   }
@@ -87,11 +89,11 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     return address(this).balance;
   }
 
-  // only contract admin can change beneficiary account
   function changeBeneficiary(address payable _newBeneficiary)
     public
     nonReentrant
-    onlyRole(DEFAULT_ADMIN_ROLE){
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     beneficiary = _newBeneficiary;
   }
 
@@ -100,7 +102,8 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     view
     virtual
     override
-    returns (string memory){
+    returns (string memory)
+  {
     require(_exists(tokenId), "URI query for nonexistent token");
 
     string memory _tokenURI = _tokenURIs[tokenId];
@@ -120,22 +123,24 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   function _setTokenURI(uint256 tokenId, string memory _tokenURI)
     internal
-    virtual{
+    virtual
+  {
     require(_exists(tokenId), "URI set of nonexistent token");
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  // only contract admin can set Token URI
+  // only contract owner can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(DEFAULT_ADMIN_ROLE){
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     _setTokenURI(tokenId, _tokenURI);
   }
 
   // user buy PASS from contract with specific erc20 tokens
   function mint() public nonReentrant returns (uint256 tokenId) {
-    require(address(erc20) != address(0), "ERC20 address is null.");
-    require((tokenIdTracker.current() <= maxSupply), "Exceeds maximum supply");
+    require(address(erc20) != address(0), "FixPrice: erc20 address is null.");
+    require((tokenIdTracker.current() <= maxSupply), "exceeds maximum supply");
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
@@ -159,27 +164,30 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    _safeMint(_msgSender(), tokenId);   // mint PASS to user address
+    _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
 
     if (platform != address(0)) {
-      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}("");
+      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}(
+        ""
+      );
       require(success, "Failed to send Ether");
     }
 
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // anyone can withdraw reserve of erc20 tokens/ETH to creator's beneficiary account
+  // withdraw erc20 tokens from contract
+  // anyone can withdraw reserve of erc20 tokens to beneficiary
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
-      (bool success, ) = payable(beneficiary).call{value: _getBalance()}("");  // withdraw ETH to beneficiary account
-      require(success, "Failed to send Ether");
-
       emit Withdraw(beneficiary, _getBalance());
+
+      (bool success, ) = payable(beneficiary).call{value: _getBalance()}("");
+      require(success, "Failed to send Ether");
     } else {
-      uint256 amount = IERC20(erc20).balanceOf(address(this));
-      IERC20(erc20).safeTransfer(beneficiary, amount);  // withdraw erc20 tokens to beneficiary account
+      uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
+      IERC20(erc20).safeTransfer(beneficiary, amount); // transfer erc20 tokens to contract owner address
 
       emit Withdraw(beneficiary, amount);
     }
@@ -190,7 +198,8 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     view
     virtual
     override(AccessControl, ERC721)
-    returns (bool){
+    returns (bool)
+  {
     return super.supportsInterface(interfaceId);
   }
 }
