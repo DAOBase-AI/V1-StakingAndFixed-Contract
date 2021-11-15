@@ -81,7 +81,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check: owner, erc20 Address, rate', () => {
       it('check base info', async () => {
-        expect(await this.tokenBase.owner()).to.eq(this.creator.address)
+        expect(await this.tokenBase.admin()).to.eq(this.creator.address)
         expect(await this.tokenBase.erc20()).to.eq(this.erc20.address)
         expect(await this.tokenBase.rate()).to.eq(this.initialRate)
       })

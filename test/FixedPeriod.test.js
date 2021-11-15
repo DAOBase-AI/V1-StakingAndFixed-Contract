@@ -128,7 +128,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check', () => {
       it('check base info', async () => {
-        expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
+        expect(await this.fixedPeriod.admin()).to.eq(this.creator.address)
         expect(await this.fixedPeriod.erc20()).to.eq(this.erc20.address)
         expect(await this.fixedPeriod.maxSupply()).to.eq(this.maxSupply)
         expect(await this.fixedPeriod.platform()).to.eq(
@@ -158,7 +158,7 @@ describe('Beeper Dao Contracts', function () {
 
         await expect(
           this.fixedPeriod.getCurrentCostToMint()
-        ).to.be.revertedWith('FixedPrice: not in time')
+        ).to.be.revertedWith('Not in the period')
       })
       it('just begin time', async () => {
         await this.testPrice(0)
@@ -232,16 +232,15 @@ describe('Beeper Dao Contracts', function () {
 
         await expect(
           this.fixedPeriod.getCurrentCostToMint()
-        ).to.be.revertedWith('FixedPrice: not in time')
+        ).to.be.revertedWith('Not in the period')
       })
     })
   })
 
   describe('FixedPeriod Test (whit platform fee)', () => {
     before(async () => {
-      this.platformRate = 5
-      await this.factory.setPlatform(this.platform.address)
-      await this.factory.setPlatformRate(5)
+      this.platformRate = 2
+      await this.factory.setPlatformParm(this.platform.address,2)
 
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
@@ -292,7 +291,7 @@ describe('Beeper Dao Contracts', function () {
 
         await expect(
           this.fixedPeriod.getCurrentCostToMint()
-        ).to.be.revertedWith('FixedPrice: not in time')
+        ).to.be.revertedWith('Not in the period')
       })
       it('just begin time', async () => {
         await this.testPrice(0)
@@ -379,7 +378,7 @@ describe('Beeper Dao Contracts', function () {
 
         await expect(
           this.fixedPeriod.getCurrentCostToMint()
-        ).to.be.revertedWith('FixedPrice: not in time')
+        ).to.be.revertedWith('Not in the period')
       })
     })
   })
@@ -438,7 +437,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
       it('check base info', async () => {
-        expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
+        expect(await this.fixedPeriod.admin()).to.eq(this.creator.address)
         expect(await this.fixedPeriod.erc20()).to.eq(
           ethers.constants.AddressZero
         )

@@ -87,7 +87,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check', () => {
       it('check base info', async () => {
-        expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
+        expect(await this.fixedPrice.admin()).to.eq(this.creator.address)
         expect(await this.fixedPrice.erc20()).to.eq(this.erc20.address)
         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
         expect(await this.fixedPrice.platform()).to.eq(
@@ -225,7 +225,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
       it('check base info', async () => {
-        expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
+        expect(await this.fixedPrice.admin()).to.eq(this.creator.address)
         expect(await this.fixedPrice.erc20()).to.eq(
           ethers.constants.AddressZero
         )
@@ -309,9 +309,8 @@ describe('Beeper Dao Contracts', function () {
 
   describe('FixedPrice with ether(with platform fee)', () => {
     before(async () => {
-      this.platformRate = 5
-      await this.factory.setPlatform(this.platform.address)
-      await this.factory.setPlatformRate(5)
+      this.platformRate = 2
+      await this.factory.setPlatformParm(this.platform.address, 2)
 
       this.rateBN = hre.ethers.utils.parseEther('100')
       this.rate = this.rateBN.toString()
@@ -354,7 +353,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
       it('check base info', async () => {
-        expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
+        expect(await this.fixedPrice.admin()).to.eq(this.creator.address)
         expect(await this.fixedPrice.erc20()).to.eq(
           ethers.constants.AddressZero
         )
@@ -363,7 +362,7 @@ describe('Beeper Dao Contracts', function () {
         // )
         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
         expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
-        expect(await this.fixedPrice.platformRate()).to.eq(5)
+        expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
       })
 
       it('only owner can set baseUrl', async () => {
@@ -417,7 +416,11 @@ describe('Beeper Dao Contracts', function () {
           .to.emit(this.fixedPrice, 'Withdraw')
           .withArgs(
             this.beneficiary.address,
-            this.rateBN.mul(3).mul(95).div(100).toString()
+            this.rateBN
+              .mul(3)
+              .mul(100 - this.platformRate)
+              .div(100)
+              .toString()
           )
 
         //user 3 mint with token id 2
@@ -434,7 +437,11 @@ describe('Beeper Dao Contracts', function () {
           .to.emit(this.fixedPrice, 'Withdraw')
           .withArgs(
             this.beneficiary.address,
-            this.rateBN.mul(2).mul(95).div(100).toString()
+            this.rateBN
+              .mul(2)
+              .mul(100 - this.platformRate)
+              .div(100)
+              .toString()
           )
       })
     })

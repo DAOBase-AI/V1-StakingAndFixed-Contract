@@ -161,6 +161,12 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     require((tokenIdTracker.current() <= maxSupply), "Exceeds maximum supply");
 
     require(msg.value >= rate, "Not enough ether sent.");
+    if (msg.value - rate > 0) {
+      (bool success, ) = payable(_msgSender()).call{value: msg.value - rate}(
+        ""
+      );
+      require(success, "Failed to send Ether");
+    }
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
