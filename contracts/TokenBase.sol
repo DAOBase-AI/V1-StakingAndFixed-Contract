@@ -8,9 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// import "@openzeppelin/contracts/access/Ownable.sol";
-
-// erc20 token staking based PASS contract. User stake creator's erc20 tokens to mint PASS and burn PASS to get erc20 tokens back.
+// erc20 token staking based PASS contract. User stake erc20 tokens to mint PASS and burn PASS to get erc20 tokens back.
 contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   using Counters for Counters.Counter;
   using Strings for uint256;
@@ -19,9 +17,9 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
 
-  address public owner; // contract owner is normally the creator
-  address public erc20; // creator's erc20 token address
-  uint256 public rate; // staking rate of erc20 token/PASS
+  address public admin; // contract admin
+  address public erc20; // staked erc20 token address
+  uint256 public rate;  // staking rate of erc20 tokens/PASS
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -40,13 +38,13 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
     uint256 _rate
   ) ERC721(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    owner = tx.origin; // the creator of DAO will be the owner of PASS contract
+    admin = tx.origin; // the creator of DAO will be the admin of PASS contract
     _baseURIextended = _bURI;
     erc20 = _erc20;
     rate = _rate;
   }
 
-  // only contract owner can setTokenURI
+  // only contract admin can setTokenURI
   function setBaseURI(string memory baseURI_)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
@@ -93,7 +91,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
     _tokenURIs[tokenId] = _tokenURI;
   }
 
-  // only contract owner can setTokenURI
+  // only contract admin can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
     onlyRole(DEFAULT_ADMIN_ROLE)
@@ -101,7 +99,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
     _setTokenURI(tokenId, _tokenURI);
   }
 
-  // stake creator's erc20 tokens to mint PASS
+  // stake erc20 tokens to mint PASS
   function mint() public returns (uint256 tokenId) {
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
@@ -115,8 +113,6 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
 
   // burn PASS to get erc20 tokens back
   function burn(uint256 tokenId) public virtual override {
-    require(tokenId != 0, "TokenBase: token id cannot be zero");
-
     super.burn(tokenId);
     IERC20(erc20).safeTransfer(_msgSender(), rate);
 
