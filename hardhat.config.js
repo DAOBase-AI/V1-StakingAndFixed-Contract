@@ -29,7 +29,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1,
+        runs: 200,
       },
       outputSelection: {
         '*': {
@@ -86,6 +86,6 @@ module.exports = {
     flat: true,
     only: [],
     spacing: 2,
-    pretty: false,
+    pretty: true,
   },
 }
