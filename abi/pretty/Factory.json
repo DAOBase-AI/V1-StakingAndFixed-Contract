@@ -1,0 +1,15 @@
+[
+  "event FixedPeriodDeploy(address indexed _addr, string _name, string _symbol, string _bURI, address _erc20, address _platform, address _beneficiary, uint256 _initialRate, uint256 _startTime, uint256 _salesValidity, uint256 _maxSupply, uint256 _platformRate)",
+  "event FixedPriceDeploy(address indexed _addr, string _name, string _symbol, string _bURI, address _erc20, address _platform, address _beneficiary, uint256 _rate, uint256 _maxSupply, uint256 _platformRate)",
+  "event NFTBaseDeploy(address indexed _addr, string _name, string _symbol, string _bURI, address _erc721)",
+  "event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)",
+  "event TokenBaseDeploy(address indexed _addr, string _name, string _symbol, string _bURI, address _erc20, uint256 _rate)",
+  "function fixedPeriodDeploy(string _name, string _symbol, string _bURI, address _erc20, address _beneficiary, uint256 _initialRate, uint256 _startTime, uint256 _salesValidity, uint256 _maxSupply)",
+  "function fixedPriceDeploy(string _name, string _symbol, string _bURI, address _erc20, address _beneficiary, uint256 _rate, uint256 _maxSupply)",
+  "function nftBaseDeploy(string _name, string _symbol, string _bURI, address _erc721)",
+  "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function setPlatformParm(address _platform, uint256 _platformRate)",
+  "function tokenBaseDeploy(string _name, string _symbol, string _bURI, address _erc20, uint256 _rate)",
+  "function transferOwnership(address newOwner)"
+]

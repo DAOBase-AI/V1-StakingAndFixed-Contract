@@ -1,0 +1,3 @@
+[
+  "function deployTokenBase(string _name, string _symbol, string _bURI, address _erc20, uint256 _rate) returns (address)"
+]
