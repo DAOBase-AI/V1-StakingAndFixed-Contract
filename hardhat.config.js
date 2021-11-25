@@ -5,6 +5,7 @@ require('@nomiclabs/hardhat-waffle')
 require('hardhat-gas-reporter')
 require('solidity-coverage')
 require('hardhat-contract-sizer')
+require('hardhat-abi-exporter')
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -28,7 +29,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 1
+        runs: 1,
       },
       outputSelection: {
         '*': {
@@ -65,6 +66,11 @@ module.exports = {
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: 'USD',
+    gasPrice: 130,
+    showTimeSpent: true,
+    coinmarketcap: process.env.COINMARKETCAP_API,
+    // outputFile: './gasReporter',
+    // noColors: true,
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
@@ -73,5 +79,13 @@ module.exports = {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
+  },
+  abiExporter: {
+    path: './abi/',
+    clear: true,
+    flat: true,
+    only: [],
+    spacing: 2,
+    pretty: false,
   },
 }

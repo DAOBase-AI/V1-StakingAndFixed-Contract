@@ -1,57 +1,39 @@
-const hre = require('hardhat')
 const { expect, should } = require('chai')
-const { ethers } = require('ethers')
+
 const { network } = require('hardhat')
 
 describe('Beeper Dao Contracts', function () {
-  beforeEach(async () => {
+  before(async () => {
     //Preparing the env
-    ;[
-      this.deployer,
-      this.creator,
-      this.platform,
-      this.user1,
-      this.user2,
-      this.user3,
-    ] = await hre.ethers.getSigners()
+    ;[this.deployer, this.creator, this.platform, ...this.user] =
+      await ethers.getSigners()
 
-    this.ERC20Factory = await hre.ethers.getContractFactory('ERC20Token')
+    this.NFTBaseFactory = await ethers.getContractFactory('NFTBase')
 
-    this.TokenBaseDeployer = await hre.ethers.getContractFactory(
-      'TokenBaseDeployer'
-    )
-    this.NFTBaseDeployer = await hre.ethers.getContractFactory(
-      'NFTBaseDeployer'
-    )
-    this.FixedPeriodDeployer = await hre.ethers.getContractFactory(
-      'FixedPeriodDeployer'
-    )
-    this.FixedPriceDeployer = await hre.ethers.getContractFactory(
-      'FixedPriceDeployer'
-    )
-    this.Factory = await hre.ethers.getContractFactory('Factory')
+    let constructorParms = ['test_name', 'test_symbol', 'https://test_url.com/']
 
-    //Deploy Factory & Three deployer & ERC20Token
-    this.tokenBaseDeployer = await this.TokenBaseDeployer.deploy()
-    this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
-    this.FixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
-    this.FixedPriceDeployer =
-      await this.FixedPriceDeployer.deploy()
-    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
+    this.ERC721Factory = await ethers.getContractFactory('ERC721Token')
+    this.erc721 = await this.ERC721Factory.deploy(...constructorParms)
+    await this.erc721.deployed()
 
-    await this.FixedPeriodDeployer.deployed()
-    await this.FixedPriceDeployer.deployed()
-    await this.nftBaseDeployer.deployed()
-    await this.tokenBaseDeployer.deployed()
-    await this.erc20.deployed()
-
-    this.factory = await this.Factory.deploy(
-      this.tokenBaseDeployer.address,
-      this.nftBaseDeployer.address,
-      this.FixedPeriodDeployer.address,
-      this.FixedPeriodDeployer.address
-    )
+    constructorParms.push(this.erc721.address)
+    this.nftBase = await this.NFTBaseFactory.deploy(...constructorParms)
+    await this.nftBase.deployed()
   })
 
-  describe('NFTBase Test', () => {})
+  describe('NFTBase Test', () => {
+    before(async () => {
+      for (let i = 1; i <= 8; i++) {
+        await this.erc721.mint(this.user[i].address)
+      }
+    })
+
+    it('test mint & burn', async () => {
+      for (let i = 1; i <= 8; i++) {
+        await this.erc721.connect(this.user[i]).approve(this.nftBase.address, i)
+        await this.nftBase.connect(this.user[i]).mint(i)
+        await this.nftBase.connect(this.user[i]).burn(i)
+      }
+    })
+  })
 })
