@@ -71,6 +71,8 @@ contract Factory is Ownable {
     uint256 _platformRate
   );
 
+  event SetPlatformParm(address _platform, uint256 _platformRate);
+
   // set the platform account and commission rate, only operable by contract owner, _platformRate is in pph
   function setPlatformParm(address payable _platform, uint256 _platformRate)
     public
@@ -78,6 +80,7 @@ contract Factory is Ownable {
   {
     platform = _platform;
     platformRate = _platformRate;
+    emit SetPlatformParm(_platform, _platformRate);
   }
 
   function tokenBaseDeploy(

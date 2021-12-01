@@ -86,6 +86,6 @@ module.exports = {
     flat: true,
     only: [],
     spacing: 2,
-    pretty: true,
+    pretty: false,
   },
 }

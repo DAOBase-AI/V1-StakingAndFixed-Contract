@@ -1,10 +1,13 @@
 [
   "event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)",
   "event ApprovalForAll(address indexed owner, address indexed operator, bool approved)",
+  "event ChangeBeneficiary(address _newBeneficiary)",
   "event Mint(address indexed from, uint256 indexed tokenId)",
   "event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)",
   "event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)",
   "event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)",
+  "event SetBaseURI(string baseURI_)",
+  "event SetTokenURI(uint256 indexed tokenId, string _tokenURI)",
   "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
   "event Withdraw(address indexed to, uint256 amount)",
   "function DEFAULT_ADMIN_ROLE() view returns (bytes32)",

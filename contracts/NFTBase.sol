@@ -14,6 +14,8 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
+  event SetBaseURI(string baseURI_);
+  event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
 
   address public admin;  // contract admin
   address public erc721; // creator's NFT address
@@ -46,6 +48,7 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     _baseURIextended = baseURI_;
+    emit SetBaseURI(baseURI_);
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -85,6 +88,7 @@ contract NFTBase is Context, AccessControl, ERC721, ERC721Burnable {
   {
     require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
     _tokenURIs[tokenId] = _tokenURI;
+    emit SetTokenURI(tokenId, _tokenURI);
   }
 
   // only admin can set TokenURI

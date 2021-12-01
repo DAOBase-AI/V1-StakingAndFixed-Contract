@@ -22,6 +22,9 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
+  event SetBaseURI(string baseURI_);
+  event ChangeBeneficiary(address _newBeneficiary);
+  event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
 
   uint256 public initialRate;          // initial exchange rate of erc20 tokens/PASS
   uint256 public startTime;            // start time of PASS sales
@@ -58,29 +61,9 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     uint256 _platformRate
   ) ERC721(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, tx.origin); // default contract admin is the creator
-    _setupBasicInfo(_bURI, tx.origin, _erc20, _beneficiary, _initialRate, _startTime, _salesValidity, _maxSupply);
-    _setupPlateformParm(_platform, _platformRate);
-  }
 
-  function _setupPlateformParm(address payable _platform, uint256 _platformRate)
-    internal
-  {
-    platform = _platform;
-    platformRate = _platformRate;
-  }
-
-  function _setupBasicInfo(
-    string memory _bURI,
-    address _admin,
-    address _erc20,
-    address payable _beneficiary,
-    uint256 _initialRate,
-    uint256 _startTime,
-    uint256 _salesValidity,
-    uint256 _maxSupply
-  ) internal {
     _baseURIextended = _bURI;
-    admin = _admin;
+    admin = tx.origin;
     erc20 = _erc20;
     initialRate = _initialRate;
     startTime = _startTime;
@@ -89,6 +72,9 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     slope = _initialRate / _salesValidity;
     maxSupply = _maxSupply;
     beneficiary = _beneficiary;
+
+    platform = _platform;
+    platformRate = _platformRate;
   }
 
   // only contract admin can set Base URI
@@ -97,6 +83,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     _baseURIextended = baseURI_;
+    emit SetBaseURI(baseURI_);
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -126,6 +113,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     onlyRole(DEFAULT_ADMIN_ROLE)
   {
     beneficiary = _newBeneficiary;
+    emit ChangeBeneficiary(_newBeneficiary);
   }
 
   function tokenURI(uint256 tokenId)
@@ -158,6 +146,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   {
     require(_exists(tokenId), "URI set of nonexistent token");
     _tokenURIs[tokenId] = _tokenURI;
+    emit SetTokenURI(tokenId, _tokenURI);
   }
 
   // only contract admin can set Token URI
@@ -236,7 +225,8 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     view
     virtual
     override(AccessControl, ERC721)
-    returns (bool){
+    returns (bool)
+  {
     return super.supportsInterface(interfaceId);
   }
 }
