@@ -13,8 +13,8 @@ contract Factory is Ownable {
   address private fixedPeriodDeployer;  // pay erc20 tokens to mint PASS in a fixed period with linearly decreasing price
   address private fixedPriceDeployer;   // pay erc20 tokens to mint PASS with fixed price
 
-  address payable private platform;     // The PASS platform commission account
-  uint256 private platformRate;         // The PASS platform commission rate in pph
+  address payable public platform;     // The PASS platform commission account
+  uint256 public platformRate;         // The PASS platform commission rate in pph
 
   constructor(
     address _tokenBaseDeployer,         
