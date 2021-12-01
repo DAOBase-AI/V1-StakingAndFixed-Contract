@@ -1,6 +1,7 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
 const { network } = require('hardhat')
+const { ethers } = require('ethers')
 
 describe('Beeper Dao Contracts', function () {
   before(async () => {
@@ -85,14 +86,18 @@ describe('Beeper Dao Contracts', function () {
 
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
-      this.termOfValidityBN = ethers.BigNumber.from('3600')
-      this.termOfValidity = this.termOfValidityBN.toString()
+
       this.startTime = await this.getTimestampBeforeWithDelay()
-      this.endTimeBN =
-        ethers.BigNumber.from(this.startTime) + this.termOfValidityBN
+      this.startTimeBN = ethers.BigNumber.from(this.startTime)
+
+      this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
       this.endTime = this.endTimeBN.toString()
-      this.slopeBN = this.initialRateBN.div(this.termOfValidityBN)
+
+      this.slopeBN = this.initialRateBN.div(
+        this.endTimeBN.sub(this.startTimeBN)
+      )
       this.slope = this.slopeBN.toString()
+
       this.maxSupply = 100
 
       this.constructorParameter = [
@@ -103,7 +108,7 @@ describe('Beeper Dao Contracts', function () {
         this.beneficiary.address,
         this.initialRate,
         this.startTime,
-        this.termOfValidity,
+        this.endTime,
         this.maxSupply,
       ]
 
@@ -236,14 +241,18 @@ describe('Beeper Dao Contracts', function () {
 
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
-      this.termOfValidityBN = ethers.BigNumber.from('3600')
-      this.termOfValidity = this.termOfValidityBN.toString()
+
       this.startTime = await this.getTimestampBeforeWithDelay()
-      this.endTimeBN =
-        ethers.BigNumber.from(this.startTime) + this.termOfValidityBN
+      this.startTimeBN = ethers.BigNumber.from(this.startTime)
+
+      this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
       this.endTime = this.endTimeBN.toString()
-      this.slopeBN = this.initialRateBN.div(this.termOfValidityBN)
+
+      this.slopeBN = this.initialRateBN.div(
+        this.endTimeBN.sub(this.startTimeBN)
+      )
       this.slope = this.slopeBN.toString()
+
       this.maxSupply = 100
 
       this.constructorParameter = [
@@ -254,7 +263,7 @@ describe('Beeper Dao Contracts', function () {
         this.beneficiary.address,
         this.initialRate,
         this.startTime,
-        this.termOfValidity,
+        this.endTime,
         this.maxSupply,
       ]
 
@@ -375,14 +384,18 @@ describe('Beeper Dao Contracts', function () {
     before(async () => {
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
-      this.termOfValidityBN = ethers.BigNumber.from('3600')
-      this.termOfValidity = this.termOfValidityBN.toString()
+
       this.startTime = await this.getTimestampBeforeWithDelay()
-      this.endTimeBN =
-        ethers.BigNumber.from(this.startTime) + this.termOfValidityBN
+      this.startTimeBN = ethers.BigNumber.from(this.startTime)
+
+      this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
       this.endTime = this.endTimeBN.toString()
-      this.slopeBN = this.initialRateBN.div(this.termOfValidityBN)
+
+      this.slopeBN = this.initialRateBN.div(
+        this.endTimeBN.sub(this.startTimeBN)
+      )
       this.slope = this.slopeBN.toString()
+
       this.maxSupply = 100
 
       this.constructorParameter = [
@@ -393,7 +406,7 @@ describe('Beeper Dao Contracts', function () {
         this.beneficiary.address,
         this.initialRate,
         this.startTime,
-        this.termOfValidity,
+        this.endTime,
         this.maxSupply,
       ]
 

@@ -85,7 +85,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "_salesValidity",
+        "name": "_endTime",
         "type": "uint256"
       },
       {
@@ -328,7 +328,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_salesValidity",
+        "name": "_endTime",
         "type": "uint256"
       },
       {

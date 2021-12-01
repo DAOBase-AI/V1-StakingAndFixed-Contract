@@ -53,7 +53,7 @@ contract Factory is Ownable {
     address _beneficiary,    // creator's beneficiary account to receive erc20 tokens
     uint256 _initialRate,    // initial exchange rate of erc20 tokens/PASS
     uint256 _startTime,      // start time of sales period
-    uint256 _salesValidity,  // period of sales validity
+    uint256 _endTime,        // start time of sales
     uint256 _maxSupply,      // maximum supply of PASS
     uint256 _platformRate    
   );
@@ -115,7 +115,7 @@ contract Factory is Ownable {
     address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _salesValidity,
+    uint256 _endTime,
     uint256 _maxSupply
   ) public {
     address addr = IFixedPeriodDeployer(fixedPeriodDeployer).deployFixedPeriod(
@@ -127,7 +127,7 @@ contract Factory is Ownable {
       _beneficiary,
       _initialRate,
       _startTime,
-      _salesValidity,
+      _endTime,
       _maxSupply,
       platformRate
     );
@@ -141,7 +141,7 @@ contract Factory is Ownable {
       _beneficiary,
       _initialRate,
       _startTime,
-      _salesValidity,
+      _endTime,
       _maxSupply,
       platformRate
     );

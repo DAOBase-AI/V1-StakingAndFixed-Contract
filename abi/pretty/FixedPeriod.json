@@ -29,7 +29,6 @@
   "function renounceOwnership()",
   "function safeTransferFrom(address from, address to, uint256 tokenId)",
   "function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data)",
-  "function salesValidity() view returns (uint256)",
   "function setApprovalForAll(address operator, bool approved)",
   "function setBaseURI(string baseURI_)",
   "function setTokenURI(uint256 tokenId, string _tokenURI)",

@@ -43,7 +43,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_salesValidity",
+        "name": "_endTime",
         "type": "uint256"
       },
       {
@@ -561,19 +561,6 @@
     "name": "safeTransferFrom",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "salesValidity",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

@@ -28,7 +28,6 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
 
   uint256 public initialRate;          // initial exchange rate of erc20 tokens/PASS
   uint256 public startTime;            // start time of PASS sales
-  uint256 public salesValidity;        // Sales Validity in seconds
   uint256 public endTime;              // endTime = startTime + salesValidity
   uint256 public maxSupply;            // Maximum supply of PASS
   uint256 public slope;                // slope = initialRate / salesValidity
@@ -55,7 +54,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _salesValidity,
+    uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
   ) Ownable(tx.origin) ERC721(_name, _symbol) {
@@ -67,9 +66,8 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     erc20 = _erc20;
     initialRate = _initialRate;
     startTime = _startTime;
-    salesValidity = _salesValidity;
-    endTime = _startTime + _salesValidity;
-    slope = _initialRate / _salesValidity;
+    endTime = _endTime;
+    slope = _initialRate / (_endTime - _startTime);
     maxSupply = _maxSupply;
     beneficiary = _beneficiary;
   }

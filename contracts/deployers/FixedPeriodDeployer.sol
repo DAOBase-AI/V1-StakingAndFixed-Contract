@@ -13,7 +13,7 @@ contract FixedPeriodDeployer {
     address payable _beneficiary,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _termOfValidity,
+    uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
   ) public returns (address) {
@@ -28,7 +28,7 @@ contract FixedPeriodDeployer {
           _beneficiary,
           _initialRate,
           _startTime,
-          _termOfValidity,
+          _endTime,
           _maxSupply,
           _platformRate
         )
