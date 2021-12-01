@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./util/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // fixed price PASS contract. Users pay specific erc20 tokens to purchase PASS from creator DAO
-contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
+contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;
@@ -22,7 +22,6 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
 
   uint256 public rate; // price rate of erc20 tokens/PASS
   uint256 public maxSupply; // Maximum supply of PASS
-  address public admin; // contract admin
   address public erc20; // erc20 token used to purchase PASS
   address payable public platform; // thePass platform's commission account
   address payable public beneficiary; // thePass benfit receiving account
@@ -47,27 +46,20 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) ERC721(_name, _symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    
+  ) Ownable(tx.origin) ERC721(_name, _symbol) {
+    platform = _platform;
+    platformRate = _platformRate;
+
     _baseURIextended = _bURI;
-    admin = tx.origin;
     erc20 = _erc20;
     rate = _rate;
     maxSupply = _maxSupply;
     beneficiary = _beneficiary;
-
-    platform = _platform;
-    platformRate = _platformRate;
   }
 
   // only contract owner can setTokenURI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function setBaseURI(string memory baseURI_) public onlyOwner {
     _baseURIextended = baseURI_;
-    emit SetBaseURI(baseURI_);
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -81,7 +73,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   function changeBeneficiary(address payable _newBeneficiary)
     public
     nonReentrant
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     beneficiary = _newBeneficiary;
     emit ChangeBeneficiary(_newBeneficiary);
@@ -123,7 +115,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
   // only contract owner can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     _setTokenURI(tokenId, _tokenURI);
   }
@@ -194,7 +186,7 @@ contract FixedPrice is Context, AccessControl, ERC721, ReentrancyGuard {
     public
     view
     virtual
-    override(AccessControl, ERC721)
+    override(ERC721)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);

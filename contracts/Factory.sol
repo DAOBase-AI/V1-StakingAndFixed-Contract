@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./util/Ownable.sol";
 import "./interfaces/ITokenBaseDeployer.sol";
 import "./interfaces/INFTBaseDeployer.sol";
 import "./interfaces/IFixedPeriodDeployer.sol";
@@ -21,7 +21,7 @@ contract Factory is Ownable {
     address _nftBaseDeployer,
     address _fixedPeriodDeployer,
     address _fixedPriceDeployer
-  ) {
+  ) Ownable(msg.sender) {
     tokenBaseDeployer = _tokenBaseDeployer;
     nftBaseDeployer = _nftBaseDeployer;
     fixedPeriodDeployer = _fixedPeriodDeployer;

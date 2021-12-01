@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./util/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // erc20 token staking based PASS contract. User stake erc20 tokens to mint PASS and burn PASS to get erc20 tokens back.
-contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
+contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;
@@ -38,9 +38,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
     string memory _bURI,
     address _erc20,
     uint256 _rate
-  ) ERC721(_name, _symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin);
-    admin = tx.origin; // the creator of DAO will be the admin of PASS contract
+  ) Ownable(tx.origin) ERC721(_name, _symbol) {
     _baseURIextended = _bURI;
     erc20 = _erc20;
     rate = _rate;
@@ -49,7 +47,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   // only contract admin can setTokenURI
   function setBaseURI(string memory baseURI_)
     public
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     _baseURIextended = baseURI_;
     emit SetBaseURI(baseURI_);
@@ -98,7 +96,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
   // only contract admin can setTokenURI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     _setTokenURI(tokenId, _tokenURI);
   }
@@ -127,7 +125,7 @@ contract TokenBase is Context, AccessControl, ERC721, ERC721Burnable {
     public
     view
     virtual
-    override(AccessControl, ERC721)
+    override(ERC721)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);

@@ -128,7 +128,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check', () => {
       it('check base info', async () => {
-        expect(await this.fixedPeriod.admin()).to.eq(this.creator.address)
+        expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
         expect(await this.fixedPeriod.erc20()).to.eq(this.erc20.address)
         expect(await this.fixedPeriod.maxSupply()).to.eq(this.maxSupply)
         expect(await this.fixedPeriod.platform()).to.eq(
@@ -141,11 +141,7 @@ describe('Beeper Dao Contracts', function () {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(
           this.fixedPeriod.setBaseURI(newBaseUrl)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+        ).to.be.revertedWith('Ownable: caller is not the owner')
       })
     })
 
@@ -200,11 +196,7 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPeriod
             .connect(this.user3)
             .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.user3.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+        ).to.be.revertedWith('Ownable: caller is not the owner')
 
         await this.fixedPeriod
           .connect(this.creator)
@@ -240,7 +232,7 @@ describe('Beeper Dao Contracts', function () {
   describe('FixedPeriod Test (whit platform fee)', () => {
     before(async () => {
       this.platformRate = 2
-      await this.factory.setPlatformParm(this.platform.address,2)
+      await this.factory.setPlatformParm(this.platform.address, 2)
 
       this.initialRateBN = ethers.utils.parseEther('100')
       this.initialRate = this.initialRateBN.toString()
@@ -347,11 +339,7 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPeriod
             .connect(this.user3)
             .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.user3.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+        ).to.be.revertedWith('Ownable: caller is not the owner')
 
         await this.fixedPeriod
           .connect(this.creator)
@@ -437,7 +425,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
       it('check base info', async () => {
-        expect(await this.fixedPeriod.admin()).to.eq(this.creator.address)
+        expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
         expect(await this.fixedPeriod.erc20()).to.eq(
           ethers.constants.AddressZero
         )
@@ -453,11 +441,7 @@ describe('Beeper Dao Contracts', function () {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(
           this.fixedPeriod.setBaseURI(newBaseUrl)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+        ).to.be.revertedWith('Ownable: caller is not the owner')
       })
     })
 

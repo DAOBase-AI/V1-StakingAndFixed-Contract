@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./util/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 * f(x) = PASS Price when current time is x + startTime
 * startTime <= x <= endTime
 */
-contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
+contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
   using SafeERC20 for IERC20;
@@ -32,7 +32,6 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   uint256 public endTime;              // endTime = startTime + salesValidity
   uint256 public maxSupply;            // Maximum supply of PASS
   uint256 public slope;                // slope = initialRate / salesValidity
-  address public admin;                // contract admin
   address public erc20;                // erc20 token used to purchase PASS
   address payable public platform;     // The Pass platform commission account
   address payable public beneficiary;  // creator's beneficiary account
@@ -59,11 +58,12 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     uint256 _salesValidity,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) ERC721(_name, _symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin); // default contract admin is the creator
+  ) Ownable(tx.origin) ERC721(_name, _symbol) {
+
+    platform = _platform;
+    platformRate = _platformRate;
 
     _baseURIextended = _bURI;
-    admin = tx.origin;
     erc20 = _erc20;
     initialRate = _initialRate;
     startTime = _startTime;
@@ -72,16 +72,10 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     slope = _initialRate / _salesValidity;
     maxSupply = _maxSupply;
     beneficiary = _beneficiary;
-
-    platform = _platform;
-    platformRate = _platformRate;
   }
 
   // only contract admin can set Base URI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function setBaseURI(string memory baseURI_) public onlyOwner {
     _baseURIextended = baseURI_;
     emit SetBaseURI(baseURI_);
   }
@@ -110,7 +104,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   function changeBeneficiary(address payable _newBeneficiary)
     public
     nonReentrant
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     beneficiary = _newBeneficiary;
     emit ChangeBeneficiary(_newBeneficiary);
@@ -152,7 +146,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   // only contract admin can set Token URI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     _setTokenURI(tokenId, _tokenURI);
   }
@@ -224,7 +218,7 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     public
     view
     virtual
-    override(AccessControl, ERC721)
+    override(ERC721)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);
