@@ -1,7 +1,7 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
 
-describe('Beeper Dao Contracts', function () {
+describe('Beeper Dao FixedPrice Contracts', function () {
   before(async () => {
     //Preparing the env
     ;[

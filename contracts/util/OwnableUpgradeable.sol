@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 /**
  * @dev Contract module which provides a basic access control mechanism, where
  * there is an account (an owner) that can be granted exclusive access to
@@ -14,7 +16,7 @@ pragma solidity ^0.8.0;
  * `onlyOwner`, which can be applied to your functions to restrict their use to
  * the owner.
  */
-abstract contract Ownable {
+abstract contract OwnableUpgradeable is Initializable {
   address private _owner;
 
   event OwnershipTransferred(
@@ -25,7 +27,7 @@ abstract contract Ownable {
   /**
    * @dev Initializes the contract setting the deployer as the initial owner.
    */
-  constructor(address newOwner) {
+  function __Ownable_init(address newOwner) internal initializer {
     _setOwner(newOwner);
   }
 

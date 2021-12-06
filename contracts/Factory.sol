@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./util/Ownable.sol";
+import "./util/OwnableUpgradeable.sol";
 import "./interfaces/ITokenBaseDeployer.sol";
 import "./interfaces/INFTBaseDeployer.sol";
 import "./interfaces/IFixedPeriodDeployer.sol";
 import "./interfaces/IFixedPriceDeployer.sol";
 
-contract Factory is Ownable {
+contract Factory is OwnableUpgradeable {
   address private tokenBaseDeployer;    // staking erc20 tokens to mint PASS
   address private nftBaseDeployer;      // staking erc721 tokens to mint PASS
   address private fixedPeriodDeployer;  // pay erc20 tokens to mint PASS in a fixed period with linearly decreasing price
@@ -21,7 +21,9 @@ contract Factory is Ownable {
     address _nftBaseDeployer,
     address _fixedPeriodDeployer,
     address _fixedPriceDeployer
-  ) Ownable(msg.sender) {
+  ) {
+    __Ownable_init(msg.sender);
+    
     tokenBaseDeployer = _tokenBaseDeployer;
     nftBaseDeployer = _nftBaseDeployer;
     fixedPeriodDeployer = _fixedPeriodDeployer;

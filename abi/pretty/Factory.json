@@ -9,6 +9,8 @@
   "function fixedPriceDeploy(string _name, string _symbol, string _bURI, address _erc20, address _beneficiary, uint256 _rate, uint256 _maxSupply)",
   "function nftBaseDeploy(string _name, string _symbol, string _bURI, address _erc721)",
   "function owner() view returns (address)",
+  "function platform() view returns (address)",
+  "function platformRate() view returns (uint256)",
   "function renounceOwnership()",
   "function setPlatformParm(address _platform, uint256 _platformRate)",
   "function tokenBaseDeploy(string _name, string _symbol, string _bURI, address _erc20, uint256 _rate)",

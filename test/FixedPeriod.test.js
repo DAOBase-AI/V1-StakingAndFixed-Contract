@@ -3,7 +3,7 @@ const { expect, should } = require('chai')
 const { network } = require('hardhat')
 const { ethers } = require('ethers')
 
-describe('Beeper Dao Contracts', function () {
+describe('Beeper Dao FixedPeriod Contracts', function () {
   before(async () => {
     //Preparing the env
     ;[

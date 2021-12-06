@@ -3,7 +3,7 @@ const { expect, should } = require('chai')
 const { network } = require('hardhat')
 
 describe('Beeper Dao Contracts', function () {
-  beforeEach(async () => {
+  before(async () => {
     //Preparing the env
     ;[
       this.deployer,
@@ -91,6 +91,12 @@ describe('Beeper Dao Contracts', function () {
         await expect(this.tokenBase.setBaseURI(newBaseUrl)).to.be.revertedWith(
           'Ownable: caller is not the owner'
         )
+
+        await expect(
+          this.tokenBase.connect(this.creator).setBaseURI(newBaseUrl)
+        )
+          .to.be.emit(this.tokenBase, 'SetBaseURI')
+          .withArgs('https://newBaserul.com/')
       })
     })
 

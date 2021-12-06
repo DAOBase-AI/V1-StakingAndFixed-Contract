@@ -1,18 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./util/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./util/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 // erc20 token staking based PASS contract. User stake erc20 tokens to mint PASS and burn PASS to get erc20 tokens back.
-contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
-  using Counters for Counters.Counter;
-  using Strings for uint256;
-  using SafeERC20 for IERC20;
+contract TokenBase is
+  Initializable,
+  ContextUpgradeable,
+  OwnableUpgradeable,
+  ERC721Upgradeable,
+  ERC721BurnableUpgradeable
+{
+  using CountersUpgradeable for CountersUpgradeable.Counter;
+  using StringsUpgradeable for uint256;
+  using SafeERC20Upgradeable for IERC20Upgradeable;
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
@@ -21,7 +28,7 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
 
   address public admin; // contract admin
   address public erc20; // staked erc20 token address
-  uint256 public rate;  // staking rate of erc20 tokens/PASS
+  uint256 public rate; // staking rate of erc20 tokens/PASS
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -30,25 +37,28 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
   string private _baseURIextended;
 
   // token id counter. For erc721 contract, PASS index number = token id
-  Counters.Counter private tokenIdTracker = Counters.Counter({_value: 1});
+  CountersUpgradeable.Counter private tokenIdTracker;
 
-  constructor(
+  function initialize(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
     address _erc20,
     uint256 _rate
-  ) Ownable(tx.origin) ERC721(_name, _symbol) {
+  ) public virtual initializer {
+    __Ownable_init(tx.origin);
+    __ERC721_init(_name, _symbol);
+    __ERC721Burnable_init();
+
+    tokenIdTracker = CountersUpgradeable.Counter({_value: 1});
+    
     _baseURIextended = _bURI;
     erc20 = _erc20;
     rate = _rate;
   }
 
   // only contract admin can setTokenURI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyOwner
-  {
+  function setBaseURI(string memory baseURI_) public onlyOwner {
     _baseURIextended = baseURI_;
     emit SetBaseURI(baseURI_);
   }
@@ -105,7 +115,11 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
   function mint() public returns (uint256 tokenId) {
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    IERC20(erc20).safeTransferFrom(_msgSender(), address(this), rate);
+    IERC20Upgradeable(erc20).safeTransferFrom(
+      _msgSender(),
+      address(this),
+      rate
+    );
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
@@ -116,7 +130,7 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
   // burn PASS to get erc20 tokens back
   function burn(uint256 tokenId) public virtual override {
     super.burn(tokenId);
-    IERC20(erc20).safeTransfer(_msgSender(), rate);
+    IERC20Upgradeable(erc20).safeTransfer(_msgSender(), rate);
 
     emit Burn(_msgSender(), tokenId);
   }
@@ -125,7 +139,7 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
     public
     view
     virtual
-    override(ERC721)
+    override(ERC721Upgradeable)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);

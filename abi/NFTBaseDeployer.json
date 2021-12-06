@@ -1,5 +1,10 @@
 [
   {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "inputs": [
       {
         "internalType": "string",
@@ -26,7 +31,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "clone",
         "type": "address"
       }
     ],

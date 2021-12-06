@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../FixedPeriod.sol";
 
 contract FixedPeriodDeployer {
+  address immutable fixedPeriodImplementation;
+
+  constructor() {
+    fixedPeriodImplementation = address(new FixedPeriod());
+  }
+
   function deployFixedPeriod(
     string memory _name,
     string memory _symbol,
@@ -17,21 +24,21 @@ contract FixedPeriodDeployer {
     uint256 _maxSupply,
     uint256 _platformRate
   ) public returns (address) {
-    return
-      address(
-        new FixedPeriod(
-          _name,
-          _symbol,
-          _bURI,
-          _erc20,
-          _platform,
-          _beneficiary,
-          _initialRate,
-          _startTime,
-          _endTime,
-          _maxSupply,
-          _platformRate
-        )
-      );
+    address clone = Clones.clone(fixedPeriodImplementation);
+
+    FixedPeriod(clone).initialize(
+      _name,
+      _symbol,
+      _bURI,
+      _erc20,
+      _platform,
+      _beneficiary,
+      _initialRate,
+      _startTime,
+      _endTime,
+      _maxSupply,
+      _platformRate
+    );
+    return clone;
   }
 }

@@ -14,6 +14,7 @@
   "function changeBeneficiary(address _newBeneficiary)",
   "function erc20() view returns (address)",
   "function getApproved(uint256 tokenId) view returns (address)",
+  "function initialize(string _name, string _symbol, string _bURI, address _erc20, address _platform, address _beneficiary, uint256 _rate, uint256 _maxSupply, uint256 _platformRate)",
   "function isApprovedForAll(address owner, address operator) view returns (bool)",
   "function maxSupply() view returns (uint256)",
   "function mint() returns (uint256 tokenId)",
