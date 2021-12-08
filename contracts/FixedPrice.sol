@@ -19,7 +19,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   event SetBaseURI(string baseURI_);
   event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
   event ChangeBeneficiary(address _newBeneficiary);
-  event UrlFreezed();
+  event BaseURIFrozen();
   event ChangeBeneficiaryUnlock(uint256 cooldownStartTimestamp);
 
   uint256 public immutable COOLDOWN_SECONDS = 2 days;
@@ -27,7 +27,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   /// @notice Seconds available to operate once the cooldown period is fullfilled
   uint256 public immutable OPERATE_WINDOW = 1 days;
 
-  bool public urlFreezed;
+  bool public baseURIFrozen;
   uint256 public cooldownStartTimestamp;
   uint256 public rate; // price rate of erc20 tokens/PASS
   uint256 public maxSupply; // Maximum supply of PASS
@@ -68,15 +68,15 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
 
   // only contract owner can setTokenURI
   function setBaseURI(string memory baseURI_) public onlyOwner {
-    require(!urlFreezed, "FixedPrice: baseurl has freezed");
+    require(!baseURIFrozen, "baseURI has been frozen");
     _baseURIextended = baseURI_;
   }
 
   // only contract admin can freeze Base URI
   function freezeUrl() public onlyOwner {
-    require(!urlFreezed, "FixedPrice: baseurl has freezed");
-    urlFreezed = true;
-    emit UrlFreezed();
+    require(!baseURIFrozen, "baseURI has been frozen");
+    baseURIFrozen = true;
+    emit BaseURIFrozen();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -156,7 +156,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
     public
     onlyOwner
   {
-    require(!urlFreezed, "FixedPrice: baseurl has freezed");
+    require(!baseURIFrozen, "baseURI has been frozen");
     _setTokenURI(tokenId, _tokenURI);
   }
 

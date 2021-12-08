@@ -16,9 +16,9 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
   event Burn(address indexed from, uint256 indexed tokenId);
   event SetBaseURI(string baseURI_);
   event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
-  event UrlFreezed();
+  event BaseURIFrozen();
 
-  bool public urlFreezed;
+  bool public baseURIFrozen;
   address public admin; // contract admin
   address public erc721; // creator's NFT address
   mapping(uint256 => uint256) private vault; // associate the PASS id with staked NFT token id
@@ -44,16 +44,16 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
 
   // only admin can set BaseURI
   function setBaseURI(string memory baseURI_) public onlyOwner {
-    require(!urlFreezed, "NFTBase: baseurl has freezed");
+    require(!baseURIFrozen, "baseURI has been frozen");
     _baseURIextended = baseURI_;
     emit SetBaseURI(baseURI_);
   }
 
   // only contract admin can freeze Base URI
   function freezeUrl() public onlyOwner {
-    require(!urlFreezed, "NFTBase: baseurl has freezed");
-    urlFreezed = true;
-    emit UrlFreezed();
+    require(!baseURIFrozen, "baseURI has been frozen");
+    baseURIFrozen = true;
+    emit BaseURIFrozen();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -101,7 +101,7 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
     public
     onlyOwner
   {
-    require(!urlFreezed, "NFTBase: baseurl has freezed");
+    require(!baseURIFrozen, "baseURI has been frozen");
     _setTokenURI(tokenId, _tokenURI);
   }
 
