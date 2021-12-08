@@ -271,7 +271,7 @@
   },
   {
     "inputs": [],
-    "name": "UNSTAKE_WINDOW",
+    "name": "OPERATE_WINDOW",
     "outputs": [
       {
         "internalType": "uint256",

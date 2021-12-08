@@ -286,7 +286,7 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPeriod
             .connect(this.creator)
             .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith('UNSTAKE_WINDOW_FINISHED')
+        ).to.be.revertedWith('OPERATE_WINDOW_FINISHED')
       })
     })
   })

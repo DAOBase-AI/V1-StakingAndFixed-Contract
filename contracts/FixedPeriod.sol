@@ -30,8 +30,8 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
 
   uint256 public immutable COOLDOWN_SECONDS = 2 days;
 
-  /// @notice Seconds available to redeem once the cooldown period is fullfilled
-  uint256 public immutable UNSTAKE_WINDOW = 1 days;
+  /// @notice Seconds available to operate once the cooldown period is fullfilled
+  uint256 public immutable OPERATE_WINDOW = 1 days;
 
   bool public urlFreezed;
   uint256 public cooldownStartTimestamp;
@@ -127,8 +127,8 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     );
     require(
       block.timestamp - (cooldownStartTimestamp + COOLDOWN_SECONDS) <=
-        UNSTAKE_WINDOW,
-      "UNSTAKE_WINDOW_FINISHED"
+        OPERATE_WINDOW,
+      "OPERATE_WINDOW_FINISHED"
     );
 
     beneficiary = _newBeneficiary;
