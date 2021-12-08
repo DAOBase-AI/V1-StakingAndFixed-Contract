@@ -50,7 +50,9 @@ describe('Beeper Dao Contracts', function () {
       this.tokenBaseDeployer.address,
       this.nftBaseDeployer.address,
       this.fixedPeriodDeployer.address,
-      this.fixedPriceDeployer.address
+      this.fixedPriceDeployer.address,
+      this.platform.address,
+      0
     )
 
     this.getTimestampBeforeWithDelay = async () => {
@@ -100,10 +102,12 @@ describe('Beeper Dao Contracts', function () {
 
       this.maxSupply = 100
 
+      this.baseURI = 'https://test_url.com/'
+
       this.constructorParameter = [
         'test_name',
         'test_symbol',
-        'https://test_url.com/',
+        this.baseURI,
         this.erc20.address,
         this.beneficiary.address,
         this.initialRate,
@@ -138,13 +142,11 @@ describe('Beeper Dao Contracts', function () {
         expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
         expect(await this.fixedPeriod.erc20()).to.eq(this.erc20.address)
         expect(await this.fixedPeriod.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPeriod.platform()).to.eq(
-          ethers.constants.AddressZero
-        )
+        expect(await this.fixedPeriod.platform()).to.eq(this.platform.address)
         expect(await this.fixedPeriod.platformRate()).to.eq(0)
       })
 
-      it('only owner can set baseUrl', async () => {
+      it('only owner can set baseURI', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(
           this.fixedPeriod.setBaseURI(newBaseUrl)
@@ -154,11 +156,12 @@ describe('Beeper Dao Contracts', function () {
       it('shoul failed when freezed url', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(
-          this.fixedPeriod.connect(this.creator).freezeUrl()
-        ).to.emit(this.fixedPeriod, 'UrlFreezed')
+          this.fixedPeriod.connect(this.creator).freezeBaseURI()
+        ).to.emit(this.fixedPeriod, 'BaseURIFrozen')
+
         await await expect(
           this.fixedPeriod.connect(this.creator).setBaseURI(newBaseUrl)
-        ).to.be.revertedWith('FixedPeriod: baseurl has freezed')
+        ).to.be.revertedWith('baseURI has been frozen')
       })
     })
 
@@ -197,6 +200,36 @@ describe('Beeper Dao Contracts', function () {
         await expect(this.fixedPeriod.connect(this.user3).mint())
           .to.emit(this.fixedPeriod, 'Mint')
           .withArgs(this.user3.address, 2)
+      })
+
+      it('mint and set token uri', async () => {
+        // mock erc20 balance
+        await this.erc20.mint(this.user1.address, this.initialRate)
+        await this.erc20.mint(this.user3.address, this.initialRate)
+        await this.erc20
+          .connect(this.user1)
+          .approve(this.fixedPriceAddr, this.initialRate)
+        await this.erc20
+          .connect(this.user3)
+          .approve(this.fixedPriceAddr, this.initialRate)
+
+        await expect(this.fixedPeriod.connect(this.user1).mint())
+          .to.emit(this.fixedPeriod, 'Mint')
+          .withArgs(this.user1.address, 3)
+        await expect(this.fixedPeriod.connect(this.user3).mint())
+          .to.emit(this.fixedPeriod, 'Mint')
+          .withArgs(this.user3.address, 4)
+
+        await expect(
+          this.fixedPeriod
+            .connect(this.creator)
+            .setTokenURI(3, 'this is whole token uri')
+        )
+          .to.emit(this.fixedPeriod, 'SetTokenURI')
+          .withArgs(3, 'this is whole token uri')
+
+        expect(await this.fixedPeriod.tokenURI(3)).eq('this is whole token uri')
+        expect(await this.fixedPeriod.tokenURI(4)).eq(this.baseURI + '4')
       })
 
       it('mint reverted when receive erc20 failed', async () => {
@@ -294,7 +327,7 @@ describe('Beeper Dao Contracts', function () {
   //   describe('FixedPeriod Test (whit platform fee)', () => {
   //     before(async () => {
   //       this.platformRate = 2
-  //       await this.factory.setPlatformParm(this.platform.address, 2)
+  //       await this.factory.setPlatformParms(this.platform.address, 2)
 
   //       this.initialRateBN = ethers.utils.parseEther('100')
   //       this.initialRate = this.initialRateBN.toString()
@@ -507,7 +540,7 @@ describe('Beeper Dao Contracts', function () {
   //         expect(await this.fixedPeriod.platformRate()).to.eq(this.platformRate)
   //       })
 
-  //       it('only owner can set baseUrl', async () => {
+  //       it('only owner can set baseURI', async () => {
   //         const newBaseUrl = 'https://newBaserul.com/'
   //         await expect(
   //           this.fixedPeriod.setBaseURI(newBaseUrl)
