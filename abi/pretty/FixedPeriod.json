@@ -7,6 +7,7 @@
   "event SetBaseURI(string baseURI_)",
   "event SetTokenURI(uint256 indexed tokenId, string _tokenURI)",
   "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  "event UrlFreezed()",
   "event Withdraw(address indexed to, uint256 amount)",
   "function approve(address to, uint256 tokenId)",
   "function balanceOf(address owner) view returns (uint256)",
@@ -14,6 +15,7 @@
   "function changeBeneficiary(address _newBeneficiary)",
   "function endTime() view returns (uint256)",
   "function erc20() view returns (address)",
+  "function freezeUrl()",
   "function getApproved(uint256 tokenId) view returns (address)",
   "function getCurrentCostToMint() view returns (uint256 cost)",
   "function initialRate() view returns (uint256)",
@@ -39,5 +41,6 @@
   "function tokenURI(uint256 tokenId) view returns (string)",
   "function transferFrom(address from, address to, uint256 tokenId)",
   "function transferOwnership(address newOwner)",
+  "function urlFreezed() view returns (bool)",
   "function withdraw()"
 ]

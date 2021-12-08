@@ -19,7 +19,9 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   event SetBaseURI(string baseURI_);
   event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
   event ChangeBeneficiary(address _newBeneficiary);
+  event UrlFreezed();
 
+  bool public urlFreezed;
   uint256 public rate; // price rate of erc20 tokens/PASS
   uint256 public maxSupply; // Maximum supply of PASS
   address public erc20; // erc20 token used to purchase PASS
@@ -59,7 +61,15 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
 
   // only contract owner can setTokenURI
   function setBaseURI(string memory baseURI_) public onlyOwner {
+    require(!urlFreezed, "FixedPrice: baseurl has freezed");
     _baseURIextended = baseURI_;
+  }
+
+  // only contract admin can freeze Base URI
+  function freezeUrl() public onlyOwner {
+    require(!urlFreezed, "FixedPrice: baseurl has freezed");
+    urlFreezed = true;
+    emit UrlFreezed();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -117,6 +127,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
     public
     onlyOwner
   {
+    require(!urlFreezed, "FixedPrice: baseurl has freezed");
     _setTokenURI(tokenId, _tokenURI);
   }
 

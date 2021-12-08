@@ -18,10 +18,12 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
   event Burn(address indexed from, uint256 indexed tokenId);
   event SetBaseURI(string baseURI_);
   event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
+  event UrlFreezed();
 
+  bool public urlFreezed;
   address public admin; // contract admin
   address public erc20; // staked erc20 token address
-  uint256 public rate;  // staking rate of erc20 tokens/PASS
+  uint256 public rate; // staking rate of erc20 tokens/PASS
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -45,12 +47,17 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
   }
 
   // only contract admin can setTokenURI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyOwner
-  {
+  function setBaseURI(string memory baseURI_) public onlyOwner {
+    require(!urlFreezed, "TokenBase: baseurl has freezed");
     _baseURIextended = baseURI_;
     emit SetBaseURI(baseURI_);
+  }
+
+  // only contract admin can freeze Base URI
+  function freezeUrl() public onlyOwner {
+    require(!urlFreezed, "TokenBase: baseurl has freezed");
+    urlFreezed = true;
+    emit UrlFreezed();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -98,6 +105,7 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
     public
     onlyOwner
   {
+    require(!urlFreezed, "TokenBase: baseurl has freezed");
     _setTokenURI(tokenId, _tokenURI);
   }
 

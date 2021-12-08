@@ -8,13 +8,13 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/** 
-* @dev Users pay specific erc20 tokens to purchase PASS from creator DAO in a fixed period. 
-* The price of PASS decreases linerly over time.
-* Price formular: f(x) = initialRate - solpe * x  
-* f(x) = PASS Price when current time is x + startTime
-* startTime <= x <= endTime
-*/
+/**
+ * @dev Users pay specific erc20 tokens to purchase PASS from creator DAO in a fixed period.
+ * The price of PASS decreases linerly over time.
+ * Price formular: f(x) = initialRate - solpe * x
+ * f(x) = PASS Price when current time is x + startTime
+ * startTime <= x <= endTime
+ */
 contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   using Counters for Counters.Counter;
   using Strings for uint256;
@@ -25,16 +25,18 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   event SetBaseURI(string baseURI_);
   event ChangeBeneficiary(address _newBeneficiary);
   event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
+  event UrlFreezed();
 
-  uint256 public initialRate;          // initial exchange rate of erc20 tokens/PASS
-  uint256 public startTime;            // start time of PASS sales
-  uint256 public endTime;              // endTime = startTime + salesValidity
-  uint256 public maxSupply;            // Maximum supply of PASS
-  uint256 public slope;                // slope = initialRate / salesValidity
-  address public erc20;                // erc20 token used to purchase PASS
-  address payable public platform;     // The Pass platform commission account
-  address payable public beneficiary;  // creator's beneficiary account
-  uint256 public platformRate;         // The Pass platform commission rate in pph
+  bool public urlFreezed;
+  uint256 public initialRate; // initial exchange rate of erc20 tokens/PASS
+  uint256 public startTime; // start time of PASS sales
+  uint256 public endTime; // endTime = startTime + salesValidity
+  uint256 public maxSupply; // Maximum supply of PASS
+  uint256 public slope; // slope = initialRate / salesValidity
+  address public erc20; // erc20 token used to purchase PASS
+  address payable public platform; // The Pass platform commission account
+  address payable public beneficiary; // creator's beneficiary account
+  uint256 public platformRate; // The Pass platform commission rate in pph
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -58,7 +60,6 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     uint256 _maxSupply,
     uint256 _platformRate
   ) Ownable(tx.origin) ERC721(_name, _symbol) {
-
     platform = _platform;
     platformRate = _platformRate;
 
@@ -74,8 +75,16 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
 
   // only contract admin can set Base URI
   function setBaseURI(string memory baseURI_) public onlyOwner {
+    require(!urlFreezed, "FixedPeriod: baseurl has freezed");
     _baseURIextended = baseURI_;
     emit SetBaseURI(baseURI_);
+  }
+
+  // only contract admin can freeze Base URI
+  function freezeUrl() public onlyOwner {
+    require(!urlFreezed, "FixedPeriod: baseurl has freezed");
+    urlFreezed = true;
+    emit UrlFreezed();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -146,6 +155,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     public
     onlyOwner
   {
+    require(!urlFreezed, "FixedPeriod: baseurl has freezed");
     _setTokenURI(tokenId, _tokenURI);
   }
 
@@ -185,11 +195,13 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    _safeMint(_msgSender(), tokenId);   // mint PASS to user address
+    _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
 
     if (platform != address(0)) {
-      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}("");
+      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}(
+        ""
+      );
       require(success, "Failed to send Ether");
     }
 
@@ -200,13 +212,13 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
       uint256 amount = _getBalance();
-      (bool success, ) = beneficiary.call{value: amount}("");  // withdraw ETH to beneficiary account
+      (bool success, ) = beneficiary.call{value: amount}(""); // withdraw ETH to beneficiary account
       require(success, "Failed to send Ether");
 
       emit Withdraw(beneficiary, amount);
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this));
-      IERC20(erc20).safeTransfer(beneficiary, amount);         // withdraw erc20 tokens to beneficiary account
+      IERC20(erc20).safeTransfer(beneficiary, amount); // withdraw erc20 tokens to beneficiary account
 
       emit Withdraw(beneficiary, amount);
     }
