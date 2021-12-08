@@ -112,6 +112,8 @@ describe('Beeper Dao Contracts', function () {
         this.maxSupply,
       ]
 
+      await this.fixedPeriodDeployer.transferOwnership(this.factory.address)
+
       const tx = await this.factory
         .connect(this.creator)
         .fixedPeriodDeploy(...this.constructorParameter)

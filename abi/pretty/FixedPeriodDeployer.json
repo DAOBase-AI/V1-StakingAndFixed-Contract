@@ -1,3 +1,7 @@
 [
-  "function deployFixedPeriod(string _name, string _symbol, string _bURI, address _erc20, address _platform, address _beneficiary, uint256 _initialRate, uint256 _startTime, uint256 _endTime, uint256 _maxSupply, uint256 _platformRate) returns (address)"
+  "event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)",
+  "function deployFixedPeriod(string _name, string _symbol, string _bURI, address _erc20, address _platform, address _beneficiary, uint256 _initialRate, uint256 _startTime, uint256 _endTime, uint256 _maxSupply, uint256 _platformRate) returns (address)",
+  "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function transferOwnership(address newOwner)"
 ]

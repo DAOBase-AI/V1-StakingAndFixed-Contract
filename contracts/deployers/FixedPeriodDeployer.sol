@@ -2,8 +2,11 @@
 pragma solidity ^0.8.4;
 
 import "../FixedPeriod.sol";
+import "../util/Ownable.sol";
 
-contract FixedPeriodDeployer {
+contract FixedPeriodDeployer is Ownable {
+  constructor() Ownable(msg.sender) {}
+
   function deployFixedPeriod(
     string memory _name,
     string memory _symbol,
@@ -16,7 +19,7 @@ contract FixedPeriodDeployer {
     uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) public returns (address) {
+  ) public onlyOwner returns (address) {
     return
       address(
         new FixedPeriod(

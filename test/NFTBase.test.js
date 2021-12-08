@@ -16,7 +16,7 @@ describe('Beeper Dao Contracts', function () {
     this.erc721 = await this.ERC721Factory.deploy(...constructorParms)
     await this.erc721.deployed()
 
-    constructorParms.push(this.erc721.address)
+    constructorParms.push(this.erc721.address)    
     this.nftBase = await this.NFTBaseFactory.deploy(...constructorParms)
     await this.nftBase.deployed()
   })

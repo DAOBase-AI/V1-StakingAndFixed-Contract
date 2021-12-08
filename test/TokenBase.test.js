@@ -55,6 +55,8 @@ describe('Beeper Dao Contracts', function () {
     beforeEach(async () => {
       this.initialRate = 1000
 
+      await this.tokenBaseDeployer.transferOwnership(this.factory.address)
+
       const tx = await this.factory
         .connect(this.creator)
         .tokenBaseDeploy(

@@ -2,8 +2,11 @@
 pragma solidity ^0.8.4;
 
 import "../FixedPrice.sol";
+import "../util/Ownable.sol";
 
-contract FixedPriceDeployer {
+contract FixedPriceDeployer is Ownable {
+  constructor() Ownable(msg.sender) {}
+
   function deployFixedPrice(
     string memory _name,
     string memory _symbol,
@@ -14,7 +17,7 @@ contract FixedPriceDeployer {
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) public returns (address) {
+  ) public onlyOwner returns (address) {
     address addr = address(
       new FixedPrice(
         _name,
