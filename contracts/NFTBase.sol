@@ -50,7 +50,7 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
   }
 
   // only contract admin can freeze Base URI
-  function freezeUrl() public onlyOwner {
+  function freezeBaseURI() public onlyOwner {
     require(!baseURIFrozen, "baseURI has been frozen");
     baseURIFrozen = true;
     emit BaseURIFrozen();

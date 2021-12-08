@@ -73,7 +73,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   }
 
   // only contract admin can freeze Base URI
-  function freezeUrl() public onlyOwner {
+  function freezeBaseURI() public onlyOwner {
     require(!baseURIFrozen, "baseURI has been frozen");
     baseURIFrozen = true;
     emit BaseURIFrozen();
