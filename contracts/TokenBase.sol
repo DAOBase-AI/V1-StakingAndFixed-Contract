@@ -77,25 +77,24 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
     );
 
     string memory _tokenURI = _tokenURIs[tokenId];
-    string memory base = _baseURI();
 
-    // If there is no base URI, return the token URI.
-    if (bytes(base).length == 0) {
-      return _tokenURI;
-    }
-    // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+    // If token URI exists, return the token URI.
     if (bytes(_tokenURI).length > 0) {
-      return string(abi.encodePacked(base, _tokenURI));
+      return _tokenURI;
+    } else {
+      return super.tokenURI(tokenId);
     }
-    // If there is a baseURI but no tokenURI, concatenate the tokenID to the baseURI.
-    return string(abi.encodePacked(base, tokenId.toString()));
   }
 
   function _setTokenURI(uint256 tokenId, string memory _tokenURI)
     internal
     virtual
   {
-    require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
+    require(_exists(tokenId), "URI set of nonexistent token");
+
+    string memory tokenURI_ = _tokenURIs[tokenId];
+    require(bytes(tokenURI_).length == 0, "already set TokenURI");
+
     _tokenURIs[tokenId] = _tokenURI;
     emit SetTokenURI(tokenId, _tokenURI);
   }
@@ -105,7 +104,6 @@ contract TokenBase is Context, Ownable, ERC721, ERC721Burnable {
     public
     onlyOwner
   {
-    require(!baseURIFrozen, "baseURI has been frozen");
     _setTokenURI(tokenId, _tokenURI);
   }
 
