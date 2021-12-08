@@ -157,9 +157,11 @@ describe('Beeper Dao Contracts', function () {
           .to.emit(this.fixedPrice, 'Mint')
           .withArgs(this.user1.address, 3)
 
-        await this.fixedPrice
-          .connect(this.creator)
-          .changeBeneficiary(this.user3.address)
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('UNSTAKE_WINDOW_FINISHED')
 
         await expect(
           this.fixedPrice
@@ -170,7 +172,7 @@ describe('Beeper Dao Contracts', function () {
         await expect(this.fixedPrice.connect(this.user3).withdraw())
           .to.emit(this.fixedPrice, 'Withdraw')
           .withArgs(
-            this.user3.address,
+            this.beneficiary.address,
             this.rateBN.mul(hre.ethers.BigNumber.from('3')).toString()
           )
       })
@@ -185,6 +187,53 @@ describe('Beeper Dao Contracts', function () {
         await this.erc20
           .connect(this.user2)
           .approve(this.fixedPriceAddr, this.rate)
+      })
+
+      it('test timelock', async () => {
+        let cooldownStartTimestamp = (
+          await hre.ethers.provider.getBlock(
+            (this.block = await hre.ethers.provider.getBlockNumber())
+          )
+        ).timestamp
+
+        await await expect(
+          this.fixedPrice.connect(this.creator).changeBeneficiaryUnlock()
+        ).to.emit(this.fixedPrice, 'ChangeBeneficiaryUnlock')
+
+        console.log(cooldownStartTimestamp)
+
+        let one_day = 864_00
+        let two_day = one_day * 2
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + one_day,
+        ])
+
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('INSUFFICIENT_COOLDOWN')
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + two_day + 1,
+        ])
+
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.not.reverted
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + two_day + one_day + 1,
+        ])
+
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('UNSTAKE_WINDOW_FINISHED')
       })
     })
   })

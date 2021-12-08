@@ -208,23 +208,23 @@ describe('Beeper Dao Contracts', function () {
         await expect(this.fixedPeriod.connect(this.user2).mint()).to.be.reverted
       })
 
-      it('check beneficiary & withdraw', async () => {
-        await expect(
-          this.fixedPeriod
-            .connect(this.user3)
-            .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith('Ownable: caller is not the owner')
+      describe('check beneficiary & withdraw', () => {
+        it('should reverted when changeBeneficiary by others', async () => {
+          await expect(
+            this.fixedPeriod
+              .connect(this.user3)
+              .changeBeneficiary(this.user3.address)
+          ).to.be.revertedWith('Ownable: caller is not the owner')
+        })
 
-        await this.fixedPeriod
-          .connect(this.creator)
-          .changeBeneficiary(this.user3.address)
-
-        await expect(this.fixedPeriod.connect(this.user1).withdraw())
-          .to.emit(this.fixedPeriod, 'Withdraw')
-          .withArgs(
-            this.user3.address,
-            await this.erc20.balanceOf(this.fixedPeriod.address)
-          )
+        it('should success when user withdraw', async () => {
+          await expect(this.fixedPeriod.connect(this.user1).withdraw())
+            .to.emit(this.fixedPeriod, 'Withdraw')
+            .withArgs(
+              this.user3.address,
+              await this.erc20.balanceOf(this.fixedPeriod.address)
+            )
+        })
       })
 
       it('last 1600 second', async () => {
@@ -243,291 +243,336 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPeriod.getCurrentCostToMint()
         ).to.be.revertedWith('Not in the period')
       })
-    })
-  })
 
-  describe('FixedPeriod Test (whit platform fee)', () => {
-    before(async () => {
-      this.platformRate = 2
-      await this.factory.setPlatformParm(this.platform.address, 2)
+      it('test timelock', async () => {
+        let cooldownStartTimestamp = (
+          await hre.ethers.provider.getBlock(
+            (this.block = await hre.ethers.provider.getBlockNumber())
+          )
+        ).timestamp
 
-      this.initialRateBN = ethers.utils.parseEther('100')
-      this.initialRate = this.initialRateBN.toString()
+        await await expect(
+          this.fixedPeriod.connect(this.creator).changeBeneficiaryUnlock()
+        ).to.emit(this.fixedPeriod, 'ChangeBeneficiaryUnlock')
 
-      this.startTime = await this.getTimestampBeforeWithDelay()
-      this.startTimeBN = ethers.BigNumber.from(this.startTime)
+        let one_day = 864_00
+        let two_day = one_day * 2
 
-      this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
-      this.endTime = this.endTimeBN.toString()
-
-      this.slopeBN = this.initialRateBN.div(
-        this.endTimeBN.sub(this.startTimeBN)
-      )
-      this.slope = this.slopeBN.toString()
-
-      this.maxSupply = 100
-
-      this.constructorParameter = [
-        'test_name',
-        'test_symbol',
-        'https://test_url.com/',
-        this.erc20.address,
-        this.beneficiary.address,
-        this.initialRate,
-        this.startTime,
-        this.endTime,
-        this.maxSupply,
-      ]
-
-      const tx = await this.factory
-        .connect(this.creator)
-        .fixedPeriodDeploy(...this.constructorParameter)
-
-      const receipt = await tx.wait()
-      for (const event of receipt.events) {
-        switch (event.event) {
-          case 'FixedPeriodDeploy': {
-            this.fixedPriceAddr = event.args[0]
-          }
-        }
-      }
-
-      let fixedPricePeriodFactory = await hre.ethers.getContractFactory(
-        'FixedPeriod'
-      )
-      this.fixedPeriod = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
-    })
-
-    describe('Mint Burn (Price Period decline) Test', () => {
-      it('reverted when not begin', async () => {
-        await network.provider.send('evm_mine', [this.startTime - 100])
-
-        await expect(
-          this.fixedPeriod.getCurrentCostToMint()
-        ).to.be.revertedWith('Not in the period')
-      })
-      it('just begin time', async () => {
-        await this.testPrice(0)
-      })
-      it('last 200 second', async () => {
-        await this.testPrice(200)
-      })
-
-      it('mint succeeds when receive erc20', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user1.address, this.initialRate)
-        await this.erc20.mint(this.user3.address, this.initialRate)
-        await this.erc20
-          .connect(this.user1)
-          .approve(this.fixedPriceAddr, this.initialRate)
-        await this.erc20
-          .connect(this.user3)
-          .approve(this.fixedPriceAddr, this.initialRate)
-
-        // user 1 mint with token id 1
-        await expect(this.fixedPeriod.connect(this.user1).mint())
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user1.address, 1)
-
-        //user 3 mint with token id 2
-        await expect(this.fixedPeriod.connect(this.user3).mint())
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 2)
-      })
-
-      it('last 1600 second', async () => {
-        await this.testPrice(1600)
-      })
-
-      it('mint reverted when receive erc20 failed', async () => {
-        // user 2 failed
-        await expect(this.fixedPeriod.connect(this.user2).mint()).to.be.reverted
-      })
-
-      it('check beneficiary & withdraw', async () => {
-        // mock erc20 balance
-        await this.erc20.mint(this.user3.address, this.initialRate)
-        await this.erc20
-          .connect(this.user3)
-          .approve(this.fixedPriceAddr, this.initialRate)
-
-        // user 3 mint a token with id 3
-        await expect(this.fixedPeriod.connect(this.user3).mint())
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 3)
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + one_day,
+        ])
 
         await expect(
           this.fixedPeriod
-            .connect(this.user3)
+            .connect(this.creator)
             .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith('Ownable: caller is not the owner')
+        ).to.be.revertedWith('INSUFFICIENT_COOLDOWN')
 
-        await this.fixedPeriod
-          .connect(this.creator)
-          .changeBeneficiary(this.user3.address)
-
-        await expect(this.fixedPeriod.connect(this.user1).withdraw())
-          .to.emit(this.fixedPeriod, 'Withdraw')
-          .withArgs(
-            this.user3.address,
-            await this.erc20.balanceOf(this.fixedPeriod.address)
-          )
-      })
-
-      it('last 3422 second', async () => {
-        await this.testPrice(3422)
-      })
-
-      it('last 3700 second', async () => {
-        let time = 3700
-        await network.provider.send('evm_setNextBlockTimestamp', [
-          this.startTime + time,
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + two_day + 1,
         ])
-        await network.provider.send('evm_mine')
 
         await expect(
-          this.fixedPeriod.getCurrentCostToMint()
-        ).to.be.revertedWith('Not in the period')
+          this.fixedPeriod
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.not.reverted
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + two_day + one_day + 1,
+        ])
+
+        await expect(
+          this.fixedPeriod
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('UNSTAKE_WINDOW_FINISHED')
       })
     })
   })
 
-  describe('FixedPeriod with ether (without platform fee)', () => {
-    before(async () => {
-      this.initialRateBN = ethers.utils.parseEther('100')
-      this.initialRate = this.initialRateBN.toString()
+  //   describe('FixedPeriod Test (whit platform fee)', () => {
+  //     before(async () => {
+  //       this.platformRate = 2
+  //       await this.factory.setPlatformParm(this.platform.address, 2)
 
-      this.startTime = await this.getTimestampBeforeWithDelay()
-      this.startTimeBN = ethers.BigNumber.from(this.startTime)
+  //       this.initialRateBN = ethers.utils.parseEther('100')
+  //       this.initialRate = this.initialRateBN.toString()
 
-      this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
-      this.endTime = this.endTimeBN.toString()
+  //       this.startTime = await this.getTimestampBeforeWithDelay()
+  //       this.startTimeBN = ethers.BigNumber.from(this.startTime)
 
-      this.slopeBN = this.initialRateBN.div(
-        this.endTimeBN.sub(this.startTimeBN)
-      )
-      this.slope = this.slopeBN.toString()
+  //       this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
+  //       this.endTime = this.endTimeBN.toString()
 
-      this.maxSupply = 100
+  //       this.slopeBN = this.initialRateBN.div(
+  //         this.endTimeBN.sub(this.startTimeBN)
+  //       )
+  //       this.slope = this.slopeBN.toString()
 
-      this.constructorParameter = [
-        'test_name',
-        'test_symbol',
-        'https://test_url.com/',
-        ethers.constants.AddressZero,
-        this.beneficiary.address,
-        this.initialRate,
-        this.startTime,
-        this.endTime,
-        this.maxSupply,
-      ]
+  //       this.maxSupply = 100
 
-      const tx = await this.factory
-        .connect(this.creator)
-        .fixedPeriodDeploy(...this.constructorParameter)
+  //       this.constructorParameter = [
+  //         'test_name',
+  //         'test_symbol',
+  //         'https://test_url.com/',
+  //         this.erc20.address,
+  //         this.beneficiary.address,
+  //         this.initialRate,
+  //         this.startTime,
+  //         this.endTime,
+  //         this.maxSupply,
+  //       ]
 
-      const receipt = await tx.wait()
-      for (const event of receipt.events) {
-        switch (event.event) {
-          case 'FixedPeriodDeploy': {
-            this.fixedPriceAddr = event.args[0]
-          }
-        }
-      }
+  //       const tx = await this.factory
+  //         .connect(this.creator)
+  //         .fixedPeriodDeploy(...this.constructorParameter)
 
-      this.options = {
-        value: this.initialRate,
-      }
-      this.shortOptions = {
-        value: (this.initialRateBN / 2).toString(),
-      }
+  //       const receipt = await tx.wait()
+  //       for (const event of receipt.events) {
+  //         switch (event.event) {
+  //           case 'FixedPeriodDeploy': {
+  //             this.fixedPriceAddr = event.args[0]
+  //           }
+  //         }
+  //       }
 
-      let fixedPricePeriodFactory = await hre.ethers.getContractFactory(
-        'FixedPeriod'
-      )
-      this.fixedPeriod = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
-    })
+  //       let fixedPricePeriodFactory = await hre.ethers.getContractFactory(
+  //         'FixedPeriod'
+  //       )
+  //       this.fixedPeriod = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
+  //     })
 
-    describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
-      it('check base info', async () => {
-        expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
-        expect(await this.fixedPeriod.erc20()).to.eq(
-          ethers.constants.AddressZero
-        )
-        // expect(await this.fixedPeriod.rate()).to.eq(
-        //   ethers.utils.parseEther(this.initialRate)
-        // )
-        expect(await this.fixedPeriod.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPeriod.platform()).to.eq(this.platform.address)
-        expect(await this.fixedPeriod.platformRate()).to.eq(this.platformRate)
-      })
+  //     describe('Mint Burn (Price Period decline) Test', () => {
+  //       it('reverted when not begin', async () => {
+  //         await network.provider.send('evm_mine', [this.startTime - 100])
 
-      it('only owner can set baseUrl', async () => {
-        const newBaseUrl = 'https://newBaserul.com/'
-        await expect(
-          this.fixedPeriod.setBaseURI(newBaseUrl)
-        ).to.be.revertedWith('Ownable: caller is not the owner')
-      })
-    })
+  //         await expect(
+  //           this.fixedPeriod.getCurrentCostToMint()
+  //         ).to.be.revertedWith('Not in the period')
+  //       })
+  //       it('just begin time', async () => {
+  //         await this.testPrice(0)
+  //       })
+  //       it('last 200 second', async () => {
+  //         await this.testPrice(200)
+  //       })
 
-    describe('Mint & Burn', () => {
-      it('last 200 second', async () => {
-        await this.testPrice(200)
-      })
+  //       it('mint succeeds when receive erc20', async () => {
+  //         // mock erc20 balance
+  //         await this.erc20.mint(this.user1.address, this.initialRate)
+  //         await this.erc20.mint(this.user3.address, this.initialRate)
+  //         await this.erc20
+  //           .connect(this.user1)
+  //           .approve(this.fixedPriceAddr, this.initialRate)
+  //         await this.erc20
+  //           .connect(this.user3)
+  //           .approve(this.fixedPriceAddr, this.initialRate)
 
-      it('succeeds when receive ether', async () => {
-        await network.provider.send('evm_mine', [this.startTime + 300])
+  //         // user 1 mint with token id 1
+  //         await expect(this.fixedPeriod.connect(this.user1).mint())
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user1.address, 1)
 
-        // user 1 mint with token id 1
-        await expect(this.fixedPeriod.connect(this.user1).mintEth(this.options))
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user1.address, 1)
+  //         //user 3 mint with token id 2
+  //         await expect(this.fixedPeriod.connect(this.user3).mint())
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user3.address, 2)
+  //       })
 
-        //user 3 mint with token id 2
-        await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 2)
-      })
+  //       it('last 1600 second', async () => {
+  //         await this.testPrice(1600)
+  //       })
 
-      it('reverted when receive erc20 failed', async () => {
-        // user 2 failed
-        await expect(
-          this.fixedPeriod.connect(this.user2).mintEth(),
-          this.shortOptions
-        ).to.be.reverted
-      })
+  //       it('mint reverted when receive erc20 failed', async () => {
+  //         // user 2 failed
+  //         await expect(this.fixedPeriod.connect(this.user2).mint()).to.be.reverted
+  //       })
 
-      it('succeeds when user1 mint (no platform fee)', async () => {
-        // user 1 mint a token
-        await expect(this.fixedPeriod.connect(this.user1).mintEth(this.options))
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user1.address, 3)
+  //       it('check beneficiary & withdraw', async () => {
+  //         // mock erc20 balance
+  //         await this.erc20.mint(this.user3.address, this.initialRate)
+  //         await this.erc20
+  //           .connect(this.user3)
+  //           .approve(this.fixedPriceAddr, this.initialRate)
 
-        await expect(this.fixedPeriod.connect(this.user1).withdraw())
-          .to.emit(this.fixedPeriod, 'Withdraw')
-          .withArgs(
-            this.beneficiary.address,
-            this.initialRateBN.sub(this.initialRateBN.mul(this.platformRate))
-              .toString
-          )
+  //         // user 3 mint a token with id 3
+  //         await expect(this.fixedPeriod.connect(this.user3).mint())
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user3.address, 3)
 
-        //user 3 mint with token id 2
-        await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 4)
+  //         await expect(
+  //           this.fixedPeriod
+  //             .connect(this.user3)
+  //             .changeBeneficiary(this.user3.address)
+  //         ).to.be.revertedWith('Ownable: caller is not the owner')
 
-        //user 3 mint with token id 3
-        await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPeriod, 'Mint')
-          .withArgs(this.user3.address, 5)
+  //         // await this.fixedPeriod
+  //         //   .connect(this.creator)
+  //         //   .changeBeneficiary(this.user3.address)
 
-        await expect(this.fixedPeriod.connect(this.creator).withdraw())
-          .to.emit(this.fixedPeriod, 'Withdraw')
-          .withArgs(
-            this.beneficiary.address,
-            await hre.ethers.provider.getBalance(this.fixedPeriod.address)
-          )
-      })
-    })
-  })
+  //         // await expect(this.fixedPeriod.connect(this.user1).withdraw())
+  //         //   .to.emit(this.fixedPeriod, 'Withdraw')
+  //         //   .withArgs(
+  //         //     this.user3.address,
+  //         //     await this.erc20.balanceOf(this.fixedPeriod.address)
+  //         //   )
+  //       })
+
+  //       it('last 3422 second', async () => {
+  //         await this.testPrice(3422)
+  //       })
+
+  //       it('last 3700 second', async () => {
+  //         let time = 3700
+  //         await network.provider.send('evm_setNextBlockTimestamp', [
+  //           this.startTime + time,
+  //         ])
+  //         await network.provider.send('evm_mine')
+
+  //         await expect(
+  //           this.fixedPeriod.getCurrentCostToMint()
+  //         ).to.be.revertedWith('Not in the period')
+  //       })
+  //     })
+  //   })
+
+  //   describe('FixedPeriod with ether (without platform fee)', () => {
+  //     before(async () => {
+  //       this.initialRateBN = ethers.utils.parseEther('100')
+  //       this.initialRate = this.initialRateBN.toString()
+
+  //       this.startTime = await this.getTimestampBeforeWithDelay()
+  //       this.startTimeBN = ethers.BigNumber.from(this.startTime)
+
+  //       this.endTimeBN = this.startTimeBN.add(ethers.BigNumber.from(3600))
+  //       this.endTime = this.endTimeBN.toString()
+
+  //       this.slopeBN = this.initialRateBN.div(
+  //         this.endTimeBN.sub(this.startTimeBN)
+  //       )
+  //       this.slope = this.slopeBN.toString()
+
+  //       this.maxSupply = 100
+
+  //       this.constructorParameter = [
+  //         'test_name',
+  //         'test_symbol',
+  //         'https://test_url.com/',
+  //         ethers.constants.AddressZero,
+  //         this.beneficiary.address,
+  //         this.initialRate,
+  //         this.startTime,
+  //         this.endTime,
+  //         this.maxSupply,
+  //       ]
+
+  //       const tx = await this.factory
+  //         .connect(this.creator)
+  //         .fixedPeriodDeploy(...this.constructorParameter)
+
+  //       const receipt = await tx.wait()
+  //       for (const event of receipt.events) {
+  //         switch (event.event) {
+  //           case 'FixedPeriodDeploy': {
+  //             this.fixedPriceAddr = event.args[0]
+  //           }
+  //         }
+  //       }
+
+  //       this.options = {
+  //         value: this.initialRate,
+  //       }
+  //       this.shortOptions = {
+  //         value: (this.initialRateBN / 2).toString(),
+  //       }
+
+  //       let fixedPricePeriodFactory = await hre.ethers.getContractFactory(
+  //         'FixedPeriod'
+  //       )
+  //       this.fixedPeriod = fixedPricePeriodFactory.attach(this.fixedPriceAddr)
+  //     })
+
+  //     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
+  //       it('check base info', async () => {
+  //         expect(await this.fixedPeriod.owner()).to.eq(this.creator.address)
+  //         expect(await this.fixedPeriod.erc20()).to.eq(
+  //           ethers.constants.AddressZero
+  //         )
+  //         // expect(await this.fixedPeriod.rate()).to.eq(
+  //         //   ethers.utils.parseEther(this.initialRate)
+  //         // )
+  //         expect(await this.fixedPeriod.maxSupply()).to.eq(this.maxSupply)
+  //         expect(await this.fixedPeriod.platform()).to.eq(this.platform.address)
+  //         expect(await this.fixedPeriod.platformRate()).to.eq(this.platformRate)
+  //       })
+
+  //       it('only owner can set baseUrl', async () => {
+  //         const newBaseUrl = 'https://newBaserul.com/'
+  //         await expect(
+  //           this.fixedPeriod.setBaseURI(newBaseUrl)
+  //         ).to.be.revertedWith('Ownable: caller is not the owner')
+  //       })
+  //     })
+
+  //     describe('Mint & Burn', () => {
+  //       it('last 200 second', async () => {
+  //         await this.testPrice(200)
+  //       })
+
+  //       it('succeeds when receive ether', async () => {
+  //         await network.provider.send('evm_mine', [this.startTime + 300])
+
+  //         // user 1 mint with token id 1
+  //         await expect(this.fixedPeriod.connect(this.user1).mintEth(this.options))
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user1.address, 1)
+
+  //         //user 3 mint with token id 2
+  //         await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user3.address, 2)
+  //       })
+
+  //       it('reverted when receive erc20 failed', async () => {
+  //         // user 2 failed
+  //         await expect(
+  //           this.fixedPeriod.connect(this.user2).mintEth(),
+  //           this.shortOptions
+  //         ).to.be.reverted
+  //       })
+
+  //       it('succeeds when user1 mint (no platform fee)', async () => {
+  //         // user 1 mint a token
+  //         await expect(this.fixedPeriod.connect(this.user1).mintEth(this.options))
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user1.address, 3)
+
+  //         await expect(this.fixedPeriod.connect(this.user1).withdraw())
+  //           .to.emit(this.fixedPeriod, 'Withdraw')
+  //           .withArgs(
+  //             this.beneficiary.address,
+  //             this.initialRateBN.sub(this.initialRateBN.mul(this.platformRate))
+  //               .toString
+  //           )
+
+  //         //user 3 mint with token id 2
+  //         await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user3.address, 4)
+
+  //         //user 3 mint with token id 3
+  //         await expect(this.fixedPeriod.connect(this.user3).mintEth(this.options))
+  //           .to.emit(this.fixedPeriod, 'Mint')
+  //           .withArgs(this.user3.address, 5)
+
+  //         await expect(this.fixedPeriod.connect(this.creator).withdraw())
+  //           .to.emit(this.fixedPeriod, 'Withdraw')
+  //           .withArgs(
+  //             this.beneficiary.address,
+  //             await hre.ethers.provider.getBalance(this.fixedPeriod.address)
+  //           )
+  //       })
+  //     })
+  //   })
 })
