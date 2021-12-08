@@ -26,8 +26,15 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   event ChangeBeneficiary(address _newBeneficiary);
   event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
   event UrlFreezed();
+  event ChangeBeneficiaryUnlock(uint256 cooldownStartTimestamp);
+
+  uint256 public immutable COOLDOWN_SECONDS = 2 days;
+
+  /// @notice Seconds available to redeem once the cooldown period is fullfilled
+  uint256 public immutable UNSTAKE_WINDOW = 1 days;
 
   bool public urlFreezed;
+  uint256 public cooldownStartTimestamp;
   uint256 public initialRate; // initial exchange rate of erc20 tokens/PASS
   uint256 public startTime; // start time of PASS sales
   uint256 public endTime; // endTime = startTime + salesValidity
@@ -113,8 +120,31 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     nonReentrant
     onlyOwner
   {
+    require(_newBeneficiary != address(0), "FixedPeriod: new address is zero");
+    require(
+      block.timestamp > cooldownStartTimestamp + COOLDOWN_SECONDS,
+      "INSUFFICIENT_COOLDOWN"
+    );
+    require(
+      block.timestamp - (cooldownStartTimestamp + COOLDOWN_SECONDS) <=
+        UNSTAKE_WINDOW,
+      "UNSTAKE_WINDOW_FINISHED"
+    );
+
     beneficiary = _newBeneficiary;
     emit ChangeBeneficiary(_newBeneficiary);
+
+    // clear cooldown after changeBeneficiary
+    if (cooldownStartTimestamp != 0) {
+      cooldownStartTimestamp = 0;
+    }
+  }
+
+  // only contract admin can change beneficiary account
+  function changeBeneficiaryUnlock() public onlyOwner {
+    cooldownStartTimestamp = block.timestamp;
+
+    emit ChangeBeneficiaryUnlock(block.timestamp);
   }
 
   function tokenURI(uint256 tokenId)
