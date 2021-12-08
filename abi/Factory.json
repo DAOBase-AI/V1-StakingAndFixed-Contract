@@ -20,6 +20,16 @@
         "internalType": "address",
         "name": "_fixedPriceDeployer",
         "type": "address"
+      },
+      {
+        "internalType": "address payable",
+        "name": "_platform",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_platformRate",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
@@ -243,7 +253,20 @@
         "type": "uint256"
       }
     ],
-    "name": "SetPlatformParm",
+    "name": "SetPlatformParms",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "cooldownStartTimestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "SetPlatformParmsUnlock",
     "type": "event"
   },
   {
@@ -288,6 +311,45 @@
     ],
     "name": "TokenBaseDeploy",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "COOLDOWN_SECONDS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "OPERATE_WINDOW",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "cooldownStartTimestamp",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
@@ -472,7 +534,14 @@
         "type": "uint256"
       }
     ],
-    "name": "setPlatformParm",
+    "name": "setPlatformParms",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "setPlatformParmsUnlock",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

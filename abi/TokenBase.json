@@ -82,6 +82,12 @@
   },
   {
     "anonymous": false,
+    "inputs": [],
+    "name": "BaseURIFrozen",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
     "inputs": [
       {
         "indexed": true,
@@ -195,12 +201,6 @@
     "type": "event"
   },
   {
-    "anonymous": false,
-    "inputs": [],
-    "name": "UrlFreezed",
-    "type": "event"
-  },
-  {
     "inputs": [],
     "name": "admin",
     "outputs": [
@@ -245,6 +245,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "baseURIFrozen",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -589,19 +602,6 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "urlFreezed",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

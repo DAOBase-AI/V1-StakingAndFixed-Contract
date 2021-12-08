@@ -90,7 +90,7 @@ contract Factory is Ownable {
   }
 
   // set the platform account and commission rate, only operable by contract owner, _platformRate is in pph
-  function setPlatformParm(address payable _platform, uint256 _platformRate)
+  function setPlatformParms(address payable _platform, uint256 _platformRate)
     public
     onlyOwner
   {
@@ -116,7 +116,7 @@ contract Factory is Ownable {
   function _setPlatformParms(address payable _platform, uint256 _platformRate)
     internal
   {
-    require(_platform != address(0), "Curve: platform address is zero.");
+    require(_platform != address(0), "Curve: platform address is zero");
     require(_platformRate <= 100, "Curve: wrong rate");
 
     platform = _platform;
