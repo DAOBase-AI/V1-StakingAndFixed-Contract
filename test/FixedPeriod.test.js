@@ -150,6 +150,16 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPeriod.setBaseURI(newBaseUrl)
         ).to.be.revertedWith('Ownable: caller is not the owner')
       })
+
+      it('shoul failed when freezed url', async () => {
+        const newBaseUrl = 'https://newBaserul.com/'
+        await expect(
+          this.fixedPeriod.connect(this.creator).freezeUrl()
+        ).to.emit(this.fixedPeriod, 'UrlFreezed')
+        await await expect(
+          this.fixedPeriod.connect(this.creator).setBaseURI(newBaseUrl)
+        ).to.be.revertedWith('FixedPeriod: baseurl has freezed')
+      })
     })
 
     describe('Mint Burn (Price Period decline) Test', () => {

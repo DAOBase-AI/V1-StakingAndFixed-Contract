@@ -104,6 +104,17 @@ describe('Beeper Dao Contracts', function () {
           'Ownable: caller is not the owner'
         )
       })
+
+      it('shoul failed when freezed url', async () => {
+        const newBaseUrl = 'https://newBaserul.com/'
+        await expect(this.fixedPrice.connect(this.creator).freezeUrl()).to.emit(
+          this.fixedPrice,
+          'UrlFreezed'
+        )
+        await await expect(
+          this.fixedPrice.connect(this.creator).setBaseURI(newBaseUrl)
+        ).to.be.revertedWith('FixedPrice: baseurl has freezed')
+      })
     })
 
     describe('Mint Burn & Fixed Price Test', () => {
