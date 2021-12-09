@@ -70,6 +70,8 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   function setBaseURI(string memory baseURI_) public onlyOwner {
     require(!baseURIFrozen, "baseURI has been frozen");
     _baseURIextended = baseURI_;
+
+    emit SetBaseURI(baseURI_);
   }
 
   // only contract admin can freeze Base URI
@@ -209,7 +211,9 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
     if (address(erc20) == address(0)) {
       emit Withdraw(receivingAddress, _getBalance());
 
-      (bool success, ) = payable(receivingAddress).call{value: _getBalance()}("");
+      (bool success, ) = payable(receivingAddress).call{value: _getBalance()}(
+        ""
+      );
       require(success, "Failed to send Ether");
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
