@@ -33,7 +33,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   uint256 public maxSupply; // Maximum supply of PASS
   address public erc20; // erc20 token used to purchase PASS
   address payable public platform; // thePass platform's commission account
-  address payable public beneficiary; // thePass benfit receiving account
+  address payable public receivingAddress; // thePass benfit receiving account
   uint256 public platformRate; // thePass platform's commission rate in pph
 
   // Optional mapping for token URIs
@@ -51,7 +51,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
     string memory _bURI,
     address _erc20,
     address payable _platform,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
@@ -63,7 +63,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
     erc20 = _erc20;
     rate = _rate;
     maxSupply = _maxSupply;
-    beneficiary = _beneficiary;
+    receivingAddress = _receivingAddress;
   }
 
   // only contract owner can setTokenURI
@@ -102,7 +102,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
         OPERATE_WINDOW,
       "OPERATE_WINDOW_FINISHED"
     );
-    beneficiary = _newBeneficiary;
+    receivingAddress = _newBeneficiary;
     emit ChangeBeneficiary(_newBeneficiary);
 
     // clear cooldown after changeBeneficiary
@@ -111,7 +111,7 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
     }
   }
 
-  // only contract admin can change beneficiary account
+  // only contract admin can change receivingAddress account
   function changeBeneficiaryUnlock() public onlyOwner {
     cooldownStartTimestamp = block.timestamp;
 
@@ -204,18 +204,18 @@ contract FixedPrice is Context, Ownable, ERC721, ReentrancyGuard {
   }
 
   // withdraw erc20 tokens from contract
-  // anyone can withdraw reserve of erc20 tokens to beneficiary
+  // anyone can withdraw reserve of erc20 tokens to receivingAddress
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
-      emit Withdraw(beneficiary, _getBalance());
+      emit Withdraw(receivingAddress, _getBalance());
 
-      (bool success, ) = payable(beneficiary).call{value: _getBalance()}("");
+      (bool success, ) = payable(receivingAddress).call{value: _getBalance()}("");
       require(success, "Failed to send Ether");
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this)); // get the amount of erc20 tokens reserved in contract
-      IERC20(erc20).safeTransfer(beneficiary, amount); // transfer erc20 tokens to contract owner address
+      IERC20(erc20).safeTransfer(receivingAddress, amount); // transfer erc20 tokens to contract owner address
 
-      emit Withdraw(beneficiary, amount);
+      emit Withdraw(receivingAddress, amount);
     }
   }
 

@@ -59,7 +59,7 @@ contract Factory is Ownable {
     string _bURI,
     address _erc20, // payment erc20 tokens
     address _platform,
-    address _beneficiary, // creator's beneficiary account to receive erc20 tokens
+    address _receivingAddress, // creator's receivingAddress account to receive erc20 tokens
     uint256 _initialRate, // initial exchange rate of erc20 tokens/PASS
     uint256 _startTime, // start time of sales period
     uint256 _endTime, // start time of sales
@@ -74,7 +74,7 @@ contract Factory is Ownable {
     string _bURI,
     address _erc20, // payment erc20 tokens
     address _platform,
-    address _beneficiary,
+    address _receivingAddress,
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
@@ -160,7 +160,7 @@ contract Factory is Ownable {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _endTime,
@@ -172,7 +172,7 @@ contract Factory is Ownable {
       _bURI,
       _erc20,
       platform,
-      _beneficiary,
+      _receivingAddress,
       _initialRate,
       _startTime,
       _endTime,
@@ -186,7 +186,7 @@ contract Factory is Ownable {
       _bURI,
       _erc20,
       platform,
-      _beneficiary,
+      _receivingAddress,
       _initialRate,
       _startTime,
       _endTime,
@@ -200,7 +200,7 @@ contract Factory is Ownable {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _rate,
     uint256 _maxSupply
   ) public {
@@ -211,7 +211,7 @@ contract Factory is Ownable {
       _bURI,
       _erc20,
       platform,
-      _beneficiary,
+      _receivingAddress,
       _rate,
       _maxSupply,
       platformRate
@@ -223,7 +223,7 @@ contract Factory is Ownable {
       _bURI,
       _erc20,
       platform,
-      _beneficiary,
+      _receivingAddress,
       _rate,
       _maxSupply,
       platformRate

@@ -8,7 +8,7 @@ interface IFixedPeriodDeployer {
     string memory _bURI,
     address _erc20,
     address payable _platform,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _termOfValidity,

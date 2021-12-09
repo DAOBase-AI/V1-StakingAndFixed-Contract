@@ -42,7 +42,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   uint256 public slope; // slope = initialRate / salesValidity
   address public erc20; // erc20 token used to purchase PASS
   address payable public platform; // The Pass platform commission account
-  address payable public beneficiary; // creator's beneficiary account
+  address payable public receivingAddress; // creator's receivingAddress account
   uint256 public platformRate; // The Pass platform commission rate in pph
 
   // Optional mapping for token URIs
@@ -60,7 +60,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     string memory _bURI,
     address _erc20,
     address payable _platform,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _endTime,
@@ -77,7 +77,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     endTime = _endTime;
     slope = _initialRate / (_endTime - _startTime);
     maxSupply = _maxSupply;
-    beneficiary = _beneficiary;
+    receivingAddress = _receivingAddress;
   }
 
   // only contract admin can set Base URI
@@ -114,7 +114,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     return initialRate - (slope * (block.timestamp - startTime));
   }
 
-  // only contract admin can change beneficiary account
+  // only contract admin can change receivingAddress account
   function changeBeneficiary(address payable _newBeneficiary)
     public
     nonReentrant
@@ -131,7 +131,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
       "OPERATE_WINDOW_FINISHED"
     );
 
-    beneficiary = _newBeneficiary;
+    receivingAddress = _newBeneficiary;
     emit ChangeBeneficiary(_newBeneficiary);
 
     // clear cooldown after changeBeneficiary
@@ -140,7 +140,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     }
   }
 
-  // only contract admin can change beneficiary account
+  // only contract admin can change receivingAddress account
   function changeBeneficiaryUnlock() public onlyOwner {
     cooldownStartTimestamp = block.timestamp;
 
@@ -236,19 +236,19 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // anyone can withdraw reserve of erc20 tokens/ETH to creator's beneficiary account
+  // anyone can withdraw reserve of erc20 tokens/ETH to creator's receivingAddress account
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
       uint256 amount = _getBalance();
-      (bool success, ) = beneficiary.call{value: amount}(""); // withdraw ETH to beneficiary account
+      (bool success, ) = receivingAddress.call{value: amount}(""); // withdraw ETH to receivingAddress account
       require(success, "Failed to send Ether");
 
-      emit Withdraw(beneficiary, amount);
+      emit Withdraw(receivingAddress, amount);
     } else {
       uint256 amount = IERC20(erc20).balanceOf(address(this));
-      IERC20(erc20).safeTransfer(beneficiary, amount); // withdraw erc20 tokens to beneficiary account
+      IERC20(erc20).safeTransfer(receivingAddress, amount); // withdraw erc20 tokens to receivingAddress account
 
-      emit Withdraw(beneficiary, amount);
+      emit Withdraw(receivingAddress, amount);
     }
   }
 

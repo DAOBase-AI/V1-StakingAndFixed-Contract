@@ -13,7 +13,7 @@ contract FixedPriceDeployer is Ownable {
     string memory _bURI,
     address _erc20,
     address payable _platform,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
@@ -25,7 +25,7 @@ contract FixedPriceDeployer is Ownable {
         _bURI,
         _erc20,
         _platform,
-        _beneficiary,
+        _receivingAddress,
         _rate,
         _maxSupply,
         _platformRate
