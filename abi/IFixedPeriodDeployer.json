@@ -28,7 +28,7 @@
       },
       {
         "internalType": "address payable",
-        "name": "_beneficiary",
+        "name": "_receivingAddress",
         "type": "address"
       },
       {
