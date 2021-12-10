@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Burnab
 
 // NFT staking based PASS contract. User stake creator's NFT to mint PASS and burn PASS to get creator's NFT back
 contract NFTBase is
+  Initializable,
   ContextUpgradeable,
   OwnableUpgradeable,
   ERC721Upgradeable,
