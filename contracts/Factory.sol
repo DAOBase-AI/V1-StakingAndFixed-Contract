@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
-import "./util/Ownable.sol";
+import "./util/OwnableUpgradeable.sol";
 import "./interfaces/ITokenBaseDeployer.sol";
 import "./interfaces/INFTBaseDeployer.sol";
 import "./interfaces/IFixedPeriodDeployer.sol";
 import "./interfaces/IFixedPriceDeployer.sol";
 
-contract Factory is Ownable {
+contract Factory is OwnableUpgradeable {
   uint256 public immutable COOLDOWN_SECONDS = 2 days;
 
   /// @notice Seconds available to operate once the cooldown period is fullfilled
@@ -29,7 +29,8 @@ contract Factory is Ownable {
     address _fixedPriceDeployer,
     address payable _platform,
     uint256 _platformRate
-  ) Ownable(msg.sender) {
+  ) {
+    __Ownable_init(msg.sender);
     tokenBaseDeployer = _tokenBaseDeployer;
     nftBaseDeployer = _nftBaseDeployer;
     fixedPeriodDeployer = _fixedPeriodDeployer;

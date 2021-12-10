@@ -1,16 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./util/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+import "./util/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721BurnableUpgradeable.sol";
 
 // NFT staking based PASS contract. User stake creator's NFT to mint PASS and burn PASS to get creator's NFT back
-contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
-  using Counters for Counters.Counter;
-  using Strings for uint256;
+contract NFTBase is
+  ContextUpgradeable,
+  OwnableUpgradeable,
+  ERC721Upgradeable,
+  ERC721BurnableUpgradeable
+{
+  using CountersUpgradeable for CountersUpgradeable.Counter;
+  using StringsUpgradeable for uint256;
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
@@ -30,14 +36,20 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
   string private _baseURIextended;
 
   // token id counter. For erc721 contract, PASS serial number = token id
-  Counters.Counter private tokenIdTracker = Counters.Counter({_value: 1});
+  CountersUpgradeable.Counter private tokenIdTracker;
 
-  constructor(
+  function initialize(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
     address _erc721
-  ) Ownable(tx.origin) ERC721(_name, _symbol) {
+  ) public virtual initializer {
+    __Ownable_init(tx.origin);
+    __ERC721_init(_name, _symbol);
+    __ERC721Burnable_init();
+
+    tokenIdTracker = CountersUpgradeable.Counter({_value: 1});
+
     _baseURIextended = _bURI;
     erc721 = _erc721;
   }
@@ -108,7 +120,11 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
     tokenId = tokenIdTracker.current(); // accumulate the token id
     vault[tokenId] = _tokenId; // associate PASS token id with NFT token id
 
-    IERC721(erc721).transferFrom(_msgSender(), address(this), _tokenId);
+    IERC721Upgradeable(erc721).transferFrom(
+      _msgSender(),
+      address(this),
+      _tokenId
+    );
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
@@ -119,7 +135,7 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
   // burn PASS to get staked NFT back
   function burn(uint256 tokenId) public virtual override {
     super.burn(tokenId);
-    IERC721(erc721).safeTransferFrom(
+    IERC721Upgradeable(erc721).safeTransferFrom(
       address(this),
       _msgSender(),
       vault[tokenId]
@@ -133,7 +149,7 @@ contract NFTBase is Context, Ownable, ERC721, ERC721Burnable {
     public
     view
     virtual
-    override(ERC721)
+    override(ERC721Upgradeable)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./util/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./util/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
 /**
  * @dev Users pay specific erc20 tokens to purchase PASS from creator DAO in a fixed period.
@@ -15,10 +16,16 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * f(x) = PASS Price when current time is x + startTime
  * startTime <= x <= endTime
  */
-contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
-  using Counters for Counters.Counter;
-  using Strings for uint256;
-  using SafeERC20 for IERC20;
+contract FixedPeriod is
+  Initializable,
+  ContextUpgradeable,
+  OwnableUpgradeable,
+  ERC721Upgradeable,
+  ReentrancyGuardUpgradeable
+{
+  using CountersUpgradeable for CountersUpgradeable.Counter;
+  using StringsUpgradeable for uint256;
+  using SafeERC20Upgradeable for IERC20Upgradeable;
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
@@ -52,9 +59,9 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
   string private _baseURIextended;
 
   // token id counter. For erc721 contract, PASS number = token id
-  Counters.Counter private tokenIdTracker = Counters.Counter({_value: 1});
+  CountersUpgradeable.Counter private tokenIdTracker;
 
-  constructor(
+  function initialize(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
@@ -66,7 +73,12 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) Ownable(tx.origin) ERC721(_name, _symbol) {
+  ) public virtual initializer {
+    __Ownable_init(tx.origin);
+    __ERC721_init(_name, _symbol);
+
+    tokenIdTracker = CountersUpgradeable.Counter({_value: 1});
+
     platform = _platform;
     platformRate = _platformRate;
 
@@ -195,10 +207,17 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    IERC20(erc20).safeTransferFrom(_msgSender(), address(this), rate);
+    IERC20Upgradeable(erc20).safeTransferFrom(
+      _msgSender(),
+      address(this),
+      rate
+    );
 
     if (platform != address(0)) {
-      IERC20(erc20).safeTransfer(platform, (rate * platformRate) / 100);
+      IERC20Upgradeable(erc20).safeTransfer(
+        platform,
+        (rate * platformRate) / 100
+      );
     }
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
@@ -245,8 +264,8 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
 
       emit Withdraw(receivingAddress, amount);
     } else {
-      uint256 amount = IERC20(erc20).balanceOf(address(this));
-      IERC20(erc20).safeTransfer(receivingAddress, amount); // withdraw erc20 tokens to receivingAddress account
+      uint256 amount = IERC20Upgradeable(erc20).balanceOf(address(this));
+      IERC20Upgradeable(erc20).safeTransfer(receivingAddress, amount); // withdraw erc20 tokens to receivingAddress account
 
       emit Withdraw(receivingAddress, amount);
     }
@@ -256,7 +275,7 @@ contract FixedPeriod is Context, Ownable, ERC721, ReentrancyGuard {
     public
     view
     virtual
-    override(ERC721)
+    override(ERC721Upgradeable)
     returns (bool)
   {
     return super.supportsInterface(interfaceId);
