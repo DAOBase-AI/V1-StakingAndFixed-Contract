@@ -3,7 +3,7 @@ const { expect, should } = require('chai')
 const { network } = require('hardhat')
 const { ethers } = require('ethers')
 
-describe('Beeper Dao Contracts', function () {
+describe('Beeper Dao FixedPeriod Contracts', function () {
   before(async () => {
     //Preparing the env
     ;[
@@ -144,6 +144,8 @@ describe('Beeper Dao Contracts', function () {
         expect(await this.fixedPeriod.maxSupply()).to.eq(this.maxSupply)
         expect(await this.fixedPeriod.platform()).to.eq(this.platform.address)
         expect(await this.fixedPeriod.platformRate()).to.eq(0)
+        expect(await this.fixedPeriod.COOLDOWN_SECONDS()).to.eq(172800)
+        expect(await this.fixedPeriod.OPERATE_WINDOW()).to.eq(86400)
       })
 
       it('only owner can set baseURI', async () => {

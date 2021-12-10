@@ -1,7 +1,7 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
 
-describe('Beeper Dao Contracts', function () {
+describe('Beeper Dao FixedPrice Contracts', function () {
   before(async () => {
     //Preparing the env
     ;[
@@ -38,6 +38,8 @@ describe('Beeper Dao Contracts', function () {
     this.fixedPriceDeployer = await this.FixedPriceDeployer.deploy()
     this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
 
+    this.platformRate = 0
+
     await this.tokenBaseDeployer.deployed()
     await this.nftBaseDeployer.deployed()
     await this.fixedPeriodDeployer.deployed()
@@ -48,7 +50,9 @@ describe('Beeper Dao Contracts', function () {
       this.tokenBaseDeployer.address,
       this.nftBaseDeployer.address,
       this.fixedPeriodDeployer.address,
-      this.fixedPriceDeployer.address
+      this.fixedPriceDeployer.address,
+      this.platform.address,
+      this.platformRate
     )
   })
 
@@ -92,9 +96,7 @@ describe('Beeper Dao Contracts', function () {
         expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
         expect(await this.fixedPrice.erc20()).to.eq(this.erc20.address)
         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPrice.platform()).to.eq(
-          hre.ethers.constants.AddressZero
-        )
+        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
         expect(await this.fixedPrice.platformRate()).to.eq(0)
       })
 
@@ -107,13 +109,13 @@ describe('Beeper Dao Contracts', function () {
 
       it('shoul failed when freezed url', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
-        await expect(this.fixedPrice.connect(this.creator).freezeUrl()).to.emit(
-          this.fixedPrice,
-          'UrlFreezed'
-        )
+        await expect(
+          this.fixedPrice.connect(this.creator).freezeBaseURI()
+        ).to.emit(this.fixedPrice, 'BaseURIFrozen')
+
         await await expect(
           this.fixedPrice.connect(this.creator).setBaseURI(newBaseUrl)
-        ).to.be.revertedWith('FixedPrice: baseurl has freezed')
+        ).to.be.revertedWith('baseURI has been frozen')
       })
     })
 
@@ -200,7 +202,7 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPrice.connect(this.creator).changeBeneficiaryUnlock()
         ).to.emit(this.fixedPrice, 'ChangeBeneficiaryUnlock')
 
-        console.log(cooldownStartTimestamp)
+        // console.log(cooldownStartTimestamp)
 
         let one_day = 864_00
         let two_day = one_day * 2
@@ -289,9 +291,7 @@ describe('Beeper Dao Contracts', function () {
         //   ethers.utils.parseEther(this.rate)
         // )
         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPrice.platform()).to.eq(
-          ethers.constants.AddressZero
-        )
+        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
         expect(await this.fixedPrice.platformRate()).to.eq(0)
       })
 
@@ -357,137 +357,137 @@ describe('Beeper Dao Contracts', function () {
     })
   })
 
-  describe('FixedPrice with ether(with platform fee)', () => {
-    before(async () => {
-      this.platformRate = 2
-      await this.factory.setPlatformParm(this.platform.address, 2)
+//   describe('FixedPrice with ether(with platform fee)', () => {
+//     before(async () => {
+//       this.platformRate = 2
+//       await this.factory.setPlatformParms(this.platform.address, 2)
 
-      this.rateBN = hre.ethers.utils.parseEther('100')
-      this.rate = this.rateBN.toString()
-      this.maxSupply = 100
+//       this.rateBN = hre.ethers.utils.parseEther('100')
+//       this.rate = this.rateBN.toString()
+//       this.maxSupply = 100
 
-      this.constructorParameter = [
-        'test_name',
-        'test_symbol',
-        'https://test_url.com/',
-        hre.ethers.constants.AddressZero,
-        this.beneficiary.address,
-        this.rate,
-        this.maxSupply,
-      ]
+//       this.constructorParameter = [
+//         'test_name',
+//         'test_symbol',
+//         'https://test_url.com/',
+//         hre.ethers.constants.AddressZero,
+//         this.beneficiary.address,
+//         this.rate,
+//         this.maxSupply,
+//       ]
 
-      const tx = await this.factory
-        .connect(this.creator)
-        .fixedPriceDeploy(...this.constructorParameter)
+//       const tx = await this.factory
+//         .connect(this.creator)
+//         .fixedPriceDeploy(...this.constructorParameter)
 
-      const receipt = await tx.wait()
-      for (const event of receipt.events) {
-        switch (event.event) {
-          case 'FixedPriceDeploy': {
-            this.fixedPriceAddr = event.args[0]
-          }
-        }
-      }
+//       const receipt = await tx.wait()
+//       for (const event of receipt.events) {
+//         switch (event.event) {
+//           case 'FixedPriceDeploy': {
+//             this.fixedPriceAddr = event.args[0]
+//           }
+//         }
+//       }
 
-      this.options = {
-        value: this.rate,
-      }
-      this.shortOptions = {
-        value: (this.rateBN / 2).toString(),
-      }
+//       this.options = {
+//         value: this.rate,
+//       }
+//       this.shortOptions = {
+//         value: (this.rateBN / 2).toString(),
+//       }
 
-      let fixedPriceFactory = await hre.ethers.getContractFactory('FixedPrice')
+//       let fixedPriceFactory = await hre.ethers.getContractFactory('FixedPrice')
 
-      this.fixedPrice = fixedPriceFactory.attach(this.fixedPriceAddr)
-    })
+//       this.fixedPrice = fixedPriceFactory.attach(this.fixedPriceAddr)
+//     })
 
-    describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
-      it('check base info', async () => {
-        expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
-        expect(await this.fixedPrice.erc20()).to.eq(
-          ethers.constants.AddressZero
-        )
-        // expect(await this.fixedPrice.rate()).to.eq(
-        //   ethers.utils.parseEther(this.rate)
-        // )
-        expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
-        expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
-      })
+//     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
+//       it('check base info', async () => {
+//         expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
+//         expect(await this.fixedPrice.erc20()).to.eq(
+//           ethers.constants.AddressZero
+//         )
+//         // expect(await this.fixedPrice.rate()).to.eq(
+//         //   ethers.utils.parseEther(this.rate)
+//         // )
+//         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
+//         expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
+//         expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
+//       })
 
-      it('only owner can set baseUrl', async () => {
-        const newBaseUrl = 'https://newBaserul.com/'
-        await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          'Ownable: caller is not the owner'
-        )
-      })
-    })
+//       it('only owner can set baseUrl', async () => {
+//         const newBaseUrl = 'https://newBaserul.com/'
+//         await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
+//           'Ownable: caller is not the owner'
+//         )
+//       })
+//     })
 
-    describe('Mint & Burn', () => {
-      it('succeeds when receive ether', async () => {
-        // user 1 mint with token id 1
-        await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user1.address, 1)
+//     describe('Mint & Burn', () => {
+//       it('succeeds when receive ether', async () => {
+//         // user 1 mint with token id 1
+//         await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
+//           .to.emit(this.fixedPrice, 'Mint')
+//           .withArgs(this.user1.address, 1)
 
-        //user 3 mint with token id 2
-        await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user3.address, 2)
-      })
+//         //user 3 mint with token id 2
+//         await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
+//           .to.emit(this.fixedPrice, 'Mint')
+//           .withArgs(this.user3.address, 2)
+//       })
 
-      it('reverted when receive erc20 failed', async () => {
-        // user 2 failed
-        await expect(
-          this.fixedPrice.connect(this.user2).mintEth(),
-          this.shortOptions
-        ).to.be.reverted
-      })
+//       it('reverted when receive erc20 failed', async () => {
+//         // user 2 failed
+//         await expect(
+//           this.fixedPrice.connect(this.user2).mintEth(),
+//           this.shortOptions
+//         ).to.be.reverted
+//       })
 
-      it('check beneficiary & withdraw', async () => {
-        // user 1 mint a token
-        await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user1.address, 3)
+//       it('check beneficiary & withdraw', async () => {
+//         // user 1 mint a token
+//         await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
+//           .to.emit(this.fixedPrice, 'Mint')
+//           .withArgs(this.user1.address, 3)
 
-        await expect(
-          this.fixedPrice
-            .connect(this.user3)
-            .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith('Ownable: caller is not the owner')
+//         await expect(
+//           this.fixedPrice
+//             .connect(this.user3)
+//             .changeBeneficiary(this.user3.address)
+//         ).to.be.revertedWith('Ownable: caller is not the owner')
 
-        await expect(this.fixedPrice.connect(this.creator).withdraw())
-          .to.emit(this.fixedPrice, 'Withdraw')
-          .withArgs(
-            this.beneficiary.address,
-            this.rateBN
-              .mul(3)
-              .mul(100 - this.platformRate)
-              .div(100)
-              .toString()
-          )
+//         await expect(this.fixedPrice.connect(this.creator).withdraw())
+//           .to.emit(this.fixedPrice, 'Withdraw')
+//           .withArgs(
+//             this.beneficiary.address,
+//             this.rateBN
+//               .mul(3)
+//               .mul(100 - this.platformRate)
+//               .div(100)
+//               .toString()
+//           )
 
-        //user 3 mint with token id 2
-        await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user3.address, 4)
+//         //user 3 mint with token id 2
+//         await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
+//           .to.emit(this.fixedPrice, 'Mint')
+//           .withArgs(this.user3.address, 4)
 
-        //user 3 mint with token id 3
-        await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user3.address, 5)
+//         //user 3 mint with token id 3
+//         await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
+//           .to.emit(this.fixedPrice, 'Mint')
+//           .withArgs(this.user3.address, 5)
 
-        await expect(this.fixedPrice.connect(this.creator).withdraw())
-          .to.emit(this.fixedPrice, 'Withdraw')
-          .withArgs(
-            this.beneficiary.address,
-            this.rateBN
-              .mul(2)
-              .mul(100 - this.platformRate)
-              .div(100)
-              .toString()
-          )
-      })
-    })
-  })
+//         await expect(this.fixedPrice.connect(this.creator).withdraw())
+//           .to.emit(this.fixedPrice, 'Withdraw')
+//           .withArgs(
+//             this.beneficiary.address,
+//             this.rateBN
+//               .mul(2)
+//               .mul(100 - this.platformRate)
+//               .div(100)
+//               .toString()
+//           )
+//       })
+//     })
+//   })
 })

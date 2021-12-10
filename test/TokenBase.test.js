@@ -3,7 +3,7 @@ const { expect, should } = require('chai')
 const { network } = require('hardhat')
 
 describe('Beeper Dao Contracts', function () {
-  beforeEach(async () => {
+  before(async () => {
     //Preparing the env
     ;[
       this.deployer,
@@ -47,12 +47,14 @@ describe('Beeper Dao Contracts', function () {
       this.tokenBaseDeployer.address,
       this.nftBaseDeployer.address,
       this.FixedPeriodDeployer.address,
-      this.FixedPeriodDeployer.address
+      this.FixedPeriodDeployer.address,
+      this.platform.address,
+      0
     )
   })
 
   describe('TokenBase Test', () => {
-    beforeEach(async () => {
+    before(async () => {
       this.initialRate = 1000
 
       await this.tokenBaseDeployer.transferOwnership(this.factory.address)
@@ -93,17 +95,22 @@ describe('Beeper Dao Contracts', function () {
         await expect(this.tokenBase.setBaseURI(newBaseUrl)).to.be.revertedWith(
           'Ownable: caller is not the owner'
         )
+
+        await expect(
+          this.tokenBase.connect(this.creator).setBaseURI(newBaseUrl)
+        )
+          .to.be.emit(this.tokenBase, 'SetBaseURI')
+          .withArgs('https://newBaserul.com/')
       })
 
       it('shoul failed when freezed url', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
-        await expect(this.tokenBase.connect(this.creator).freezeUrl()).to.emit(
-          this.tokenBase,
-          'UrlFreezed'
-        )
+        await expect(
+          this.tokenBase.connect(this.creator).freezeBaseURI()
+        ).to.emit(this.tokenBase, 'BaseURIFrozen')
         await await expect(
           this.tokenBase.connect(this.creator).setBaseURI(newBaseUrl)
-        ).to.be.revertedWith('TokenBase: baseurl has freezed')
+        ).to.be.revertedWith('baseURI has been frozen')
       })
     })
 
@@ -145,13 +152,13 @@ describe('Beeper Dao Contracts', function () {
         // user 1 mint a token
         await expect(this.tokenBase.connect(this.user1).mint())
           .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+          .withArgs(this.user1.address, 3)
 
-        await expect(this.tokenBase.connect(this.user1).burn('1'))
+        await expect(this.tokenBase.connect(this.user1).burn('3'))
           .to.emit(this.tokenBase, 'Burn')
-          .withArgs(this.user1.address, 1)
+          .withArgs(this.user1.address, 3)
           .to.emit(this.tokenBase, 'Transfer')
-          .withArgs(this.user1.address, ethers.constants.AddressZero, 1)
+          .withArgs(this.user1.address, ethers.constants.AddressZero, 3)
       })
 
       it('reverted when user1 mint , user2 burn', async () => {
@@ -164,10 +171,10 @@ describe('Beeper Dao Contracts', function () {
         // user 1 mint a token
         await expect(this.tokenBase.connect(this.user1).mint())
           .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+          .withArgs(this.user1.address, 4)
 
         await expect(
-          this.tokenBase.connect(this.user2).burn(1)
+          this.tokenBase.connect(this.user2).burn(4)
         ).to.be.revertedWith('ERC721Burnable: caller is not owner nor approved')
       })
 
@@ -181,10 +188,10 @@ describe('Beeper Dao Contracts', function () {
         // user 1 mint a token
         await expect(this.tokenBase.connect(this.user1).mint())
           .to.emit(this.tokenBase, 'Mint')
-          .withArgs(this.user1.address, 1)
+          .withArgs(this.user1.address, 5)
 
         await expect(
-          this.tokenBase.connect(this.user1).burn(2)
+          this.tokenBase.connect(this.user1).burn(7)
         ).to.be.revertedWith('ERC721: operator query for nonexistent token')
       })
     })
