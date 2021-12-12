@@ -8,7 +8,6 @@
   "event SetBaseURI(string baseURI_)",
   "event SetTokenURI(uint256 indexed tokenId, string _tokenURI)",
   "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
-  "function admin() view returns (address)",
   "function approve(address to, uint256 tokenId)",
   "function balanceOf(address owner) view returns (uint256)",
   "function baseURIFrozen() view returns (bool)",

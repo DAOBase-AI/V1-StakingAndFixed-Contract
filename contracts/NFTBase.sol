@@ -26,7 +26,6 @@ contract NFTBase is
   event BaseURIFrozen();
 
   bool public baseURIFrozen;
-  address public admin; // contract admin
   address public erc721; // creator's NFT address
   mapping(uint256 => uint256) private vault; // associate the PASS id with staked NFT token id
 

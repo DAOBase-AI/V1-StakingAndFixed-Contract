@@ -28,7 +28,6 @@ contract TokenBase is
   event BaseURIFrozen();
 
   bool public baseURIFrozen;
-  address public admin; // contract admin
   address public erc20; // staked erc20 token address
   uint256 public rate; // staking rate of erc20 tokens/PASS
 
