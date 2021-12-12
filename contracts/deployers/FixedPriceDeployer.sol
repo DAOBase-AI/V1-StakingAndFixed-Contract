@@ -23,7 +23,7 @@ contract FixedPriceDeployer is OwnableUpgradeable {
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) public returns (address) {
+  ) public onlyOwner returns (address) {
     address clone = Clones.clone(fixedPriceImplementation);
 
     FixedPrice(clone).initialize(

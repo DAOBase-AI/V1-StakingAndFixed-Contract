@@ -18,7 +18,7 @@ contract NFTBaseDeployer is OwnableUpgradeable {
     string memory _symbol,
     string memory _bURI,
     address _erc721
-  ) public returns (address) {
+  ) public onlyOwner returns (address) {
     address clone = Clones.clone(nftBaseImplementation);
 
     NFTBase(clone).initialize(_name, _symbol, _bURI, _erc721);

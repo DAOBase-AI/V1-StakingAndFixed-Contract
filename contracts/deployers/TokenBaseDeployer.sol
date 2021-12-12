@@ -19,7 +19,7 @@ contract TokenBaseDeployer is OwnableUpgradeable {
     string memory _bURI,
     address _erc20,
     uint256 _rate
-  ) public returns (address) {
+  ) public onlyOwner returns (address) {
     address clone = Clones.clone(tokenBaseImplementation);
 
     TokenBase(clone).initialize(_name, _symbol, _bURI, _erc20, _rate);

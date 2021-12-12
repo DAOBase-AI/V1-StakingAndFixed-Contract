@@ -25,7 +25,7 @@ contract FixedPeriodDeployer is OwnableUpgradeable {
     uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) public returns (address) {
+  ) public onlyOwner returns (address) {
     address clone = Clones.clone(fixedPeriodImplementation);
 
     FixedPeriod(clone).initialize(
