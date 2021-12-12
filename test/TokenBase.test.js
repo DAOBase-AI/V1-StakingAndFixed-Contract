@@ -35,7 +35,7 @@ describe('Beeper Dao Contracts', function () {
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
     this.FixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
     this.FixedPriceDeployer = await this.FixedPriceDeployer.deploy()
-    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
+    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT', 6)
 
     await this.FixedPeriodDeployer.deployed()
     await this.FixedPriceDeployer.deployed()
@@ -51,6 +51,22 @@ describe('Beeper Dao Contracts', function () {
       this.platform.address,
       0
     )
+  })
+
+  it('should failed if factory not the owner of deployer', async () => {
+    this.initialRate = 1000
+
+    await expect(
+      this.factory
+        .connect(this.creator)
+        .tokenBaseDeploy(
+          'test_name',
+          'test_symbol',
+          'https://test_url.com/',
+          this.erc20.address,
+          this.initialRate
+        )
+    ).to.be.revertedWith('Ownable: caller is not the owner')
   })
 
   describe('TokenBase Test', () => {

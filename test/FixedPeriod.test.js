@@ -38,7 +38,7 @@ describe('Beeper Dao FixedPeriod Contracts', function () {
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
     this.fixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
     this.fixedPriceDeployer = await this.FixedPriceDeployer.deploy()
-    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
+    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT', 6)
 
     await this.tokenBaseDeployer.deployed()
     await this.nftBaseDeployer.deployed()
@@ -80,6 +80,35 @@ describe('Beeper Dao FixedPeriod Contracts', function () {
         console.log(error)
       }
     }
+  })
+
+  it('should failed if factory not the owner of deployer', async () => {
+    let constructorParameter
+    const initialRateBN = ethers.utils.parseEther('100')
+    const initialRate = initialRateBN.toString()
+    const startTime = await this.getTimestampBeforeWithDelay()
+    const startTimeBN = ethers.BigNumber.from(startTime)
+    const endTimeBN = startTimeBN.add(ethers.BigNumber.from(3600))
+    const endTime = endTimeBN.toString()
+    const slopeBN = initialRateBN.div(endTimeBN.sub(startTimeBN))
+    const maxSupply = 100
+    const baseURI = 'https://test_url.com/'
+    constructorParameter = [
+      'test_name',
+      'test_symbol',
+      baseURI,
+      this.erc20.address,
+      this.beneficiary.address,
+      initialRate,
+      startTime,
+      endTime,
+      maxSupply,
+    ]
+    await expect(
+      this.factory
+        .connect(this.creator)
+        .fixedPeriodDeploy(...constructorParameter)
+    ).to.be.revertedWith('Ownable: caller is not the owner')
   })
 
   describe('FixedPeriod Test (without platform fee)', () => {
