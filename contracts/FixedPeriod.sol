@@ -31,17 +31,13 @@ contract FixedPeriod is
   event Withdraw(address indexed to, uint256 amount);
   event SetBaseURI(string baseURI_);
   event ChangeBeneficiary(address _newBeneficiary);
-  event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
+  event PermanentURI(string _value, uint256 indexed _id);
   event BaseURIFrozen();
   event ChangeBeneficiaryUnlock(uint256 cooldownStartTimestamp);
 
-  uint256 public immutable COOLDOWN_SECONDS = 2 days;
-
-  /// @notice Seconds available to operate once the cooldown period is fullfilled
-  uint256 public immutable OPERATE_WINDOW = 1 days;
+  address public TIMELOCK;
 
   bool public baseURIFrozen;
-  uint256 public cooldownStartTimestamp;
   uint256 public initialRate; // initial exchange rate of erc20 tokens/PASS
   uint256 public startTime; // start time of PASS sales
   uint256 public endTime; // endTime = startTime + salesValidity
@@ -65,6 +61,7 @@ contract FixedPeriod is
     string memory _name,
     string memory _symbol,
     string memory _bURI,
+    address _timelock,
     address _erc20,
     address payable _platform,
     address payable _receivingAddress,
@@ -74,9 +71,9 @@ contract FixedPeriod is
     uint256 _maxSupply,
     uint256 _platformRate
   ) public virtual initializer {
-    __Ownable_init(tx.origin);
-    __ERC721_init(_name, _symbol);
+    __Ownable_init(_timelock);
 
+    __ERC721_init(_name, _symbol);
     tokenIdTracker = CountersUpgradeable.Counter({_value: 1});
 
     platform = _platform;
@@ -133,30 +130,9 @@ contract FixedPeriod is
     onlyOwner
   {
     require(_newBeneficiary != address(0), "FixedPeriod: new address is zero");
-    require(
-      block.timestamp > cooldownStartTimestamp + COOLDOWN_SECONDS,
-      "INSUFFICIENT_COOLDOWN"
-    );
-    require(
-      block.timestamp - (cooldownStartTimestamp + COOLDOWN_SECONDS) <=
-        OPERATE_WINDOW,
-      "OPERATE_WINDOW_FINISHED"
-    );
 
     receivingAddress = _newBeneficiary;
     emit ChangeBeneficiary(_newBeneficiary);
-
-    // clear cooldown after changeBeneficiary
-    if (cooldownStartTimestamp != 0) {
-      cooldownStartTimestamp = 0;
-    }
-  }
-
-  // only contract admin can change receivingAddress account
-  function changeBeneficiaryUnlock() public onlyOwner {
-    cooldownStartTimestamp = block.timestamp;
-
-    emit ChangeBeneficiaryUnlock(block.timestamp);
   }
 
   function tokenURI(uint256 tokenId)
@@ -188,7 +164,7 @@ contract FixedPeriod is
     require(bytes(tokenURI_).length == 0, "already set TokenURI");
 
     _tokenURIs[tokenId] = _tokenURI;
-    emit SetTokenURI(tokenId, _tokenURI);
+    emit PermanentURI(_tokenURI, tokenId);
   }
 
   // only contract admin can set Token URI

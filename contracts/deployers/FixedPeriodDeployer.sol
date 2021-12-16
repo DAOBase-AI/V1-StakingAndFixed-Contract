@@ -4,19 +4,21 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../FixedPeriod.sol";
 import "../util/OwnableUpgradeable.sol";
+import "../interfaces/IFixedPeriodDeployer.sol";
 
-contract FixedPeriodDeployer is OwnableUpgradeable {
-  address immutable fixedPeriodImplementation;
+contract FixedPeriodDeployer is IFixedPeriodDeployer, OwnableUpgradeable {
+  address public immutable FIXEDPERIOD_IMPL;
 
   constructor() {
     __Ownable_init(msg.sender);
-    fixedPeriodImplementation = address(new FixedPeriod());
+    FIXEDPERIOD_IMPL = address(new FixedPeriod());
   }
 
   function deployFixedPeriod(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
+    address _timelock,
     address _erc20,
     address payable _platform,
     address payable _receivingAddress,
@@ -25,13 +27,14 @@ contract FixedPeriodDeployer is OwnableUpgradeable {
     uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) public onlyOwner returns (address) {
-    address clone = Clones.clone(fixedPeriodImplementation);
+  ) public override onlyOwner returns (address) {
+    address clone = Clones.clone(FIXEDPERIOD_IMPL);
 
     FixedPeriod(clone).initialize(
       _name,
       _symbol,
       _bURI,
+      _timelock,
       _erc20,
       _platform,
       _receivingAddress,

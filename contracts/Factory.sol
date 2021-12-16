@@ -2,27 +2,27 @@
 pragma solidity ^0.8.4;
 
 import "./util/OwnableUpgradeable.sol";
+import "./util/Timelock.sol";
 import "./interfaces/ITokenBaseDeployer.sol";
 import "./interfaces/INFTBaseDeployer.sol";
 import "./interfaces/IFixedPeriodDeployer.sol";
 import "./interfaces/IFixedPriceDeployer.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract Factory is OwnableUpgradeable {
-  uint256 public immutable COOLDOWN_SECONDS = 2 days;
-
-  /// @notice Seconds available to operate once the cooldown period is fullfilled
-  uint256 public immutable OPERATE_WINDOW = 1 days;
+  address public immutable TIMELOCK_IMPL;
 
   address private tokenBaseDeployer; // staking erc20 tokens to mint PASS
   address private nftBaseDeployer; // staking erc721 tokens to mint PASS
   address private fixedPeriodDeployer; // pay erc20 tokens to mint PASS in a fixed period with linearly decreasing price
   address private fixedPriceDeployer; // pay erc20 tokens to mint PASS with fixed price
 
-  uint256 public cooldownStartTimestamp;
+  address public timelock;
   address payable public platform; // The PASS platform commission account
   uint256 public platformRate; // The PASS platform commission rate in pph
 
   constructor(
+    address _timelock,
     address _tokenBaseDeployer,
     address _nftBaseDeployer,
     address _fixedPeriodDeployer,
@@ -30,12 +30,15 @@ contract Factory is OwnableUpgradeable {
     address payable _platform,
     uint256 _platformRate
   ) {
-    __Ownable_init(msg.sender);
+    __Ownable_init(_timelock);
+    timelock = _timelock;
     tokenBaseDeployer = _tokenBaseDeployer;
     nftBaseDeployer = _nftBaseDeployer;
     fixedPeriodDeployer = _fixedPeriodDeployer;
     fixedPriceDeployer = _fixedPriceDeployer;
     _setPlatformParms(_platform, _platformRate);
+
+    TIMELOCK_IMPL = address(new Timelock());
   }
 
   event TokenBaseDeploy(
@@ -82,35 +85,13 @@ contract Factory is OwnableUpgradeable {
   );
 
   event SetPlatformParms(address _platform, uint256 _platformRate);
-  event SetPlatformParmsUnlock(uint256 cooldownStartTimestamp);
-
-  // unlock setPlatformParms function
-  function setPlatformParmsUnlock() public onlyOwner {
-    cooldownStartTimestamp = block.timestamp;
-    emit SetPlatformParmsUnlock(block.timestamp);
-  }
 
   // set the platform account and commission rate, only operable by contract owner, _platformRate is in pph
   function setPlatformParms(address payable _platform, uint256 _platformRate)
     public
     onlyOwner
   {
-    require(
-      block.timestamp > cooldownStartTimestamp + COOLDOWN_SECONDS,
-      "INSUFFICIENT_COOLDOWN"
-    );
-    require(
-      block.timestamp - (cooldownStartTimestamp + COOLDOWN_SECONDS) <=
-        OPERATE_WINDOW,
-      "OPERATE_WINDOW_FINISHED"
-    );
-
     _setPlatformParms(_platform, _platformRate);
-
-    // clear cooldown after changeBeneficiary
-    if (cooldownStartTimestamp != 0) {
-      cooldownStartTimestamp = 0;
-    }
   }
 
   // set up the platform parameters internal
@@ -131,7 +112,8 @@ contract Factory is OwnableUpgradeable {
     string memory _symbol,
     string memory _bURI,
     address _erc20,
-    uint256 _rate
+    uint256 _rate,
+    address _timelock
   ) public {
     ITokenBaseDeployer factory = ITokenBaseDeployer(tokenBaseDeployer);
     //return the address of deployed NFT PASS contract
@@ -139,6 +121,7 @@ contract Factory is OwnableUpgradeable {
       _name,
       _symbol,
       _bURI,
+      _timelock == address(0) ? cloneTimelock() : _timelock,
       _erc20,
       _rate
     );
@@ -149,10 +132,17 @@ contract Factory is OwnableUpgradeable {
     string memory _name,
     string memory _symbol,
     string memory _bURI,
-    address _erc721
+    address _erc721,
+    address _timelock
   ) public {
     INFTBaseDeployer factory = INFTBaseDeployer(nftBaseDeployer);
-    address addr = factory.deployNFTBase(_name, _symbol, _bURI, _erc721);
+    address addr = factory.deployNFTBase(
+      _name,
+      _symbol,
+      _bURI,
+      _timelock == address(0) ? cloneTimelock() : _timelock,
+      _erc721
+    );
     emit NFTBaseDeploy(addr, _name, _symbol, _bURI, _erc721);
   }
 
@@ -165,12 +155,14 @@ contract Factory is OwnableUpgradeable {
     uint256 _initialRate,
     uint256 _startTime,
     uint256 _endTime,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    address _timelock
   ) public {
     address addr = IFixedPeriodDeployer(fixedPeriodDeployer).deployFixedPeriod(
       _name,
       _symbol,
       _bURI,
+      _timelock == address(0) ? cloneTimelock() : _timelock,
       _erc20,
       platform,
       _receivingAddress,
@@ -203,13 +195,15 @@ contract Factory is OwnableUpgradeable {
     address _erc20,
     address payable _receivingAddress,
     uint256 _rate,
-    uint256 _maxSupply
+    uint256 _maxSupply,
+    address _timelock
   ) public {
     IFixedPriceDeployer factory = IFixedPriceDeployer(fixedPriceDeployer);
     address addr = factory.deployFixedPrice(
       _name,
       _symbol,
       _bURI,
+      _timelock == address(0) ? cloneTimelock() : _timelock,
       _erc20,
       platform,
       _receivingAddress,
@@ -229,5 +223,20 @@ contract Factory is OwnableUpgradeable {
       _maxSupply,
       platformRate
     );
+  }
+
+  function cloneTimelock() private returns (address payable newTimelock) {
+    newTimelock = payable(Clones.clone(TIMELOCK_IMPL));
+
+    uint256 minDelay = 2 days;
+    address[] memory proposers = new address[](1);
+    address[] memory executors = new address[](1);
+    proposers[0] = msg.sender;
+    executors[0] = address(0);
+
+    Timelock(newTimelock).initialize(minDelay, proposers, executors);
+    (minDelay, proposers, executors);
+
+    return newTimelock;
   }
 }

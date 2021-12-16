@@ -28,7 +28,7 @@ abstract contract OwnableUpgradeable is Initializable {
    * @dev Initializes the contract setting the deployer as the initial owner.
    */
   function __Ownable_init(address newOwner) internal initializer {
-    _setOwner(newOwner);
+    _transferOwnership(newOwner);
   }
 
   /**
@@ -54,7 +54,7 @@ abstract contract OwnableUpgradeable is Initializable {
    * thereby removing any functionality that is only available to the owner.
    */
   function renounceOwnership() public virtual onlyOwner {
-    _setOwner(address(0));
+    _transferOwnership(address(0));
   }
 
   /**
@@ -63,12 +63,14 @@ abstract contract OwnableUpgradeable is Initializable {
    */
   function transferOwnership(address newOwner) public virtual onlyOwner {
     require(newOwner != address(0), "Ownable: new owner is the zero address");
-    _setOwner(newOwner);
+    _transferOwnership(newOwner);
   }
 
-  function _setOwner(address newOwner) private {
+  function _transferOwnership(address newOwner) private {
     address oldOwner = _owner;
     _owner = newOwner;
     emit OwnershipTransferred(oldOwner, newOwner);
   }
+
+  uint256[49] private __gap;
 }

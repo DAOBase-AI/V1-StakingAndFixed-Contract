@@ -4,24 +4,26 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../NFTBase.sol";
 import "../util/OwnableUpgradeable.sol";
+import "../interfaces/INFTBaseDeployer.sol";
 
-contract NFTBaseDeployer is OwnableUpgradeable {
-  address immutable nftBaseImplementation;
+contract NFTBaseDeployer is INFTBaseDeployer, OwnableUpgradeable {
+  address public immutable NFTBASE_IMPL;
 
   constructor() {
     __Ownable_init(msg.sender);
-    nftBaseImplementation = address(new NFTBase());
+    NFTBASE_IMPL = address(new NFTBase());
   }
 
   function deployNFTBase(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
+    address _timelock,
     address _erc721
-  ) public onlyOwner returns (address) {
-    address clone = Clones.clone(nftBaseImplementation);
+  ) public override onlyOwner returns (address) {
+    address clone = Clones.clone(NFTBASE_IMPL);
 
-    NFTBase(clone).initialize(_name, _symbol, _bURI, _erc721);
+    NFTBase(clone).initialize(_name, _symbol, _bURI, _timelock, _erc721);
     return clone;
   }
 }

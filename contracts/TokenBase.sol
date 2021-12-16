@@ -24,7 +24,7 @@ contract TokenBase is
   event Mint(address indexed from, uint256 indexed tokenId);
   event Burn(address indexed from, uint256 indexed tokenId);
   event SetBaseURI(string baseURI_);
-  event SetTokenURI(uint256 indexed tokenId, string _tokenURI);
+  event PermanentURI(string _value, uint256 indexed _id);
   event BaseURIFrozen();
 
   bool public baseURIFrozen;
@@ -44,10 +44,11 @@ contract TokenBase is
     string memory _name,
     string memory _symbol,
     string memory _bURI,
+    address _timelock,
     address _erc20,
     uint256 _rate
   ) public virtual initializer {
-    __Ownable_init(tx.origin);
+    __Ownable_init(_timelock);
     __ERC721_init(_name, _symbol);
     __ERC721Burnable_init();
 
@@ -108,7 +109,7 @@ contract TokenBase is
     require(bytes(tokenURI_).length == 0, "already set TokenURI");
 
     _tokenURIs[tokenId] = _tokenURI;
-    emit SetTokenURI(tokenId, _tokenURI);
+    emit PermanentURI(_tokenURI, tokenId);
   }
 
   // only contract admin can setTokenURI

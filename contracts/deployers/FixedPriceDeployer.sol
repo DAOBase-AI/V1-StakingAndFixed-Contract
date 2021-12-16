@@ -4,32 +4,35 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../FixedPrice.sol";
 import "../util/OwnableUpgradeable.sol";
+import "../interfaces/IFixedPriceDeployer.sol";
 
-contract FixedPriceDeployer is OwnableUpgradeable {
-  address immutable fixedPriceImplementation;
+contract FixedPriceDeployer is IFixedPriceDeployer, OwnableUpgradeable {
+  address public immutable FIXEDPRICE_IMPL;
 
   constructor() {
     __Ownable_init(msg.sender);
-    fixedPriceImplementation = address(new FixedPrice());
+    FIXEDPRICE_IMPL = address(new FixedPrice());
   }
 
   function deployFixedPrice(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
+    address _timelock,
     address _erc20,
     address payable _platform,
     address payable _receivingAddress,
     uint256 _rate,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) public onlyOwner returns (address) {
-    address clone = Clones.clone(fixedPriceImplementation);
+  ) public override onlyOwner returns (address) {
+    address clone = Clones.clone(FIXEDPRICE_IMPL);
 
     FixedPrice(clone).initialize(
       _name,
       _symbol,
       _bURI,
+      _timelock,
       _erc20,
       _platform,
       _receivingAddress,
