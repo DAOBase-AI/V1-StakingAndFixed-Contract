@@ -3,6 +3,11 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_timelock",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "_tokenBaseDeployer",
         "type": "address"
       },
@@ -260,19 +265,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "cooldownStartTimestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "SetPlatformParmsUnlock",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "address",
         "name": "_addr",
@@ -314,38 +306,12 @@
   },
   {
     "inputs": [],
-    "name": "COOLDOWN_SECONDS",
+    "name": "TIMELOCK_IMPL",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "address",
         "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "OPERATE_WINDOW",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "cooldownStartTimestamp",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -397,6 +363,11 @@
         "internalType": "uint256",
         "name": "_maxSupply",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_timelock",
+        "type": "address"
       }
     ],
     "name": "fixedPeriodDeploy",
@@ -440,6 +411,11 @@
         "internalType": "uint256",
         "name": "_maxSupply",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_timelock",
+        "type": "address"
       }
     ],
     "name": "fixedPriceDeploy",
@@ -467,6 +443,11 @@
       {
         "internalType": "address",
         "name": "_erc721",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_timelock",
         "type": "address"
       }
     ],
@@ -541,9 +522,15 @@
   },
   {
     "inputs": [],
-    "name": "setPlatformParmsUnlock",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "name": "timelock",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -572,6 +559,11 @@
         "internalType": "uint256",
         "name": "_rate",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_timelock",
+        "type": "address"
       }
     ],
     "name": "tokenBaseDeploy",

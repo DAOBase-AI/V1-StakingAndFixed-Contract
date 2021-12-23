@@ -1,6 +1,7 @@
 [
   "event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)",
-  "function deployNFTBase(string _name, string _symbol, string _bURI, address _erc721) returns (address)",
+  "function NFTBASE_IMPL() view returns (address)",
+  "function deployNFTBase(string _name, string _symbol, string _bURI, address _timelock, address _erc721) returns (address)",
   "function owner() view returns (address)",
   "function renounceOwnership()",
   "function transferOwnership(address newOwner)"

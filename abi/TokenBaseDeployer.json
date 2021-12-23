@@ -24,6 +24,19 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "TOKENBASE_IMPL",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "string",
@@ -39,6 +52,11 @@
         "internalType": "string",
         "name": "_bURI",
         "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_timelock",
+        "type": "address"
       },
       {
         "internalType": "address",

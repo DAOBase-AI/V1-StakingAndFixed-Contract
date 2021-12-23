@@ -10,6 +10,11 @@
         "internalType": "string",
         "name": "symbol",
         "type": "string"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_decimals",
+        "type": "uint8"
       }
     ],
     "stateMutability": "nonpayable",
@@ -337,6 +342,19 @@
         "type": "bool"
       }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "faucet",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },

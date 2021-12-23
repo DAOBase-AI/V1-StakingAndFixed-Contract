@@ -16,6 +16,7 @@
   "function burnFrom(address account, uint256 amount)",
   "function decimals() view returns (uint8)",
   "function decreaseAllowance(address spender, uint256 subtractedValue) returns (bool)",
+  "function faucet(uint256 amount)",
   "function getRoleAdmin(bytes32 role) view returns (bytes32)",
   "function getRoleMember(bytes32 role, uint256 index) view returns (address)",
   "function getRoleMemberCount(bytes32 role) view returns (uint256)",

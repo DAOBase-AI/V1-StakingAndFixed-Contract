@@ -72,19 +72,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "cooldownStartTimestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "ChangeBeneficiaryUnlock",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "address",
         "name": "from",
@@ -125,30 +112,30 @@
       {
         "indexed": false,
         "internalType": "string",
-        "name": "baseURI_",
+        "name": "_value",
         "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_id",
+        "type": "uint256"
       }
     ],
-    "name": "SetBaseURI",
+    "name": "PermanentURI",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
         "indexed": false,
         "internalType": "string",
-        "name": "_tokenURI",
+        "name": "baseURI_",
         "type": "string"
       }
     ],
-    "name": "SetTokenURI",
+    "name": "SetBaseURI",
     "type": "event"
   },
   {
@@ -197,25 +184,12 @@
   },
   {
     "inputs": [],
-    "name": "COOLDOWN_SECONDS",
+    "name": "TIMELOCK",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "address",
         "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "OPERATE_WINDOW",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -286,26 +260,6 @@
   },
   {
     "inputs": [],
-    "name": "changeBeneficiaryUnlock",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "cooldownStartTimestamp",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "erc20",
     "outputs": [
       {
@@ -359,6 +313,11 @@
         "internalType": "string",
         "name": "_bURI",
         "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_timelock",
+        "type": "address"
       },
       {
         "internalType": "address",
