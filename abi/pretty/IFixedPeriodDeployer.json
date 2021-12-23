@@ -1,0 +1,3 @@
+[
+  "function deployFixedPeriod(string _name, string _symbol, string _bURI, address _erc20, address _platform, address _receivingAddress, uint256 _initialRate, uint256 _startTime, uint256 _termOfValidity, uint256 _maxSupply, uint256 _platformRate) returns (address)"
+]

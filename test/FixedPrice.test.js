@@ -1,7 +1,7 @@
 const hre = require('hardhat')
 const { expect, should } = require('chai')
 
-describe('Beeper Dao Contracts', function () {
+describe('Beeper Dao FixedPrice Contracts', function () {
   before(async () => {
     //Preparing the env
     ;[
@@ -36,7 +36,9 @@ describe('Beeper Dao Contracts', function () {
     this.nftBaseDeployer = await this.NFTBaseDeployer.deploy()
     this.fixedPeriodDeployer = await this.FixedPeriodDeployer.deploy()
     this.fixedPriceDeployer = await this.FixedPriceDeployer.deploy()
-    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT')
+    this.erc20 = await this.ERC20Factory.deploy('Test Token', 'TT', 6)
+
+    this.platformRate = 0
 
     await this.tokenBaseDeployer.deployed()
     await this.nftBaseDeployer.deployed()
@@ -48,8 +50,37 @@ describe('Beeper Dao Contracts', function () {
       this.tokenBaseDeployer.address,
       this.nftBaseDeployer.address,
       this.fixedPeriodDeployer.address,
-      this.fixedPriceDeployer.address
+      this.fixedPriceDeployer.address,
+      this.platform.address,
+      this.platformRate
     )
+  })
+
+  it('should failed if factory not the owner of deployer', async () => {
+    this.rateBN = hre.ethers.utils.parseEther('100')
+    this.rate = this.rateBN.toString()
+    this.maxSupply = 100
+
+    this.constructorParameter = [
+      'test_name',
+      'test_symbol',
+      'https://test_url.com/',
+      this.erc20.address,
+      this.beneficiary.address,
+      this.rate,
+      this.maxSupply,
+    ]
+
+    await this.fixedPriceDeployer.transferOwnership(this.factory.address)
+
+    const tx = await this.factory
+      .connect(this.creator)
+      .fixedPriceDeploy(...this.constructorParameter)
+    await expect(
+      this.factory
+        .connect(this.creator)
+        .fixedPriceDeploy(...constructorParameter)
+    ).to.be.revertedWith('Ownable: caller is not the owner')
   })
 
   describe('FixedPrice Test', () => {
@@ -67,6 +98,8 @@ describe('Beeper Dao Contracts', function () {
         this.rate,
         this.maxSupply,
       ]
+
+      await this.fixedPriceDeployer.transferOwnership(this.factory.address)
 
       const tx = await this.factory
         .connect(this.creator)
@@ -87,22 +120,29 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check', () => {
       it('check base info', async () => {
-        expect(await this.fixedPrice.admin()).to.eq(this.creator.address)
+        expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
         expect(await this.fixedPrice.erc20()).to.eq(this.erc20.address)
         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPrice.platform()).to.eq(
-          hre.ethers.constants.AddressZero
-        )
+        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
         expect(await this.fixedPrice.platformRate()).to.eq(0)
       })
 
       it('only owner can set baseUrl', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${
-            hre.ethers.constants.HashZero
-          }`
+          'Ownable: caller is not the owner'
         )
+      })
+
+      it('shoul failed when freezed url', async () => {
+        const newBaseUrl = 'https://newBaserul.com/'
+        await expect(
+          this.fixedPrice.connect(this.creator).freezeBaseURI()
+        ).to.emit(this.fixedPrice, 'BaseURIFrozen')
+
+        await await expect(
+          this.fixedPrice.connect(this.creator).setBaseURI(newBaseUrl)
+        ).to.be.revertedWith('baseURI has been frozen')
       })
     })
 
@@ -146,24 +186,22 @@ describe('Beeper Dao Contracts', function () {
           .to.emit(this.fixedPrice, 'Mint')
           .withArgs(this.user1.address, 3)
 
-        await this.fixedPrice
-          .connect(this.creator)
-          .changeBeneficiary(this.user3.address)
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('OPERATE_WINDOW_FINISHED')
 
         await expect(
           this.fixedPrice
             .connect(this.user1)
             .changeBeneficiary(this.user1.address)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.user1.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+        ).to.be.revertedWith('Ownable: caller is not the owner')
 
         await expect(this.fixedPrice.connect(this.user3).withdraw())
           .to.emit(this.fixedPrice, 'Withdraw')
           .withArgs(
-            this.user3.address,
+            this.beneficiary.address,
             this.rateBN.mul(hre.ethers.BigNumber.from('3')).toString()
           )
       })
@@ -178,6 +216,53 @@ describe('Beeper Dao Contracts', function () {
         await this.erc20
           .connect(this.user2)
           .approve(this.fixedPriceAddr, this.rate)
+      })
+
+      it('test timelock', async () => {
+        let cooldownStartTimestamp = (
+          await hre.ethers.provider.getBlock(
+            (this.block = await hre.ethers.provider.getBlockNumber())
+          )
+        ).timestamp
+
+        await await expect(
+          this.fixedPrice.connect(this.creator).changeBeneficiaryUnlock()
+        ).to.emit(this.fixedPrice, 'ChangeBeneficiaryUnlock')
+
+        // console.log(cooldownStartTimestamp)
+
+        let one_day = 864_00
+        let two_day = one_day * 2
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + one_day,
+        ])
+
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('INSUFFICIENT_COOLDOWN')
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + two_day + 1,
+        ])
+
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.not.reverted
+
+        await network.provider.send('evm_mine', [
+          cooldownStartTimestamp + two_day + one_day + 1,
+        ])
+
+        await expect(
+          this.fixedPrice
+            .connect(this.creator)
+            .changeBeneficiary(this.user3.address)
+        ).to.be.revertedWith('OPERATE_WINDOW_FINISHED')
       })
     })
   })
@@ -225,7 +310,7 @@ describe('Beeper Dao Contracts', function () {
 
     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
       it('check base info', async () => {
-        expect(await this.fixedPrice.admin()).to.eq(this.creator.address)
+        expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
         expect(await this.fixedPrice.erc20()).to.eq(
           ethers.constants.AddressZero
         )
@@ -233,18 +318,14 @@ describe('Beeper Dao Contracts', function () {
         //   ethers.utils.parseEther(this.rate)
         // )
         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPrice.platform()).to.eq(
-          ethers.constants.AddressZero
-        )
+        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
         expect(await this.fixedPrice.platformRate()).to.eq(0)
       })
 
       it('only owner can set baseUrl', async () => {
         const newBaseUrl = 'https://newBaserul.com/'
         await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
+          'Ownable: caller is not the owner'
         )
       })
     })
@@ -280,11 +361,7 @@ describe('Beeper Dao Contracts', function () {
           this.fixedPrice
             .connect(this.user3)
             .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.user3.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+        ).to.be.revertedWith('Ownable: caller is not the owner')
 
         await expect(this.fixedPrice.connect(this.creator).withdraw())
           .to.emit(this.fixedPrice, 'Withdraw')
@@ -307,143 +384,137 @@ describe('Beeper Dao Contracts', function () {
     })
   })
 
-  describe('FixedPrice with ether(with platform fee)', () => {
-    before(async () => {
-      this.platformRate = 2
-      await this.factory.setPlatformParm(this.platform.address, 2)
+  //   describe('FixedPrice with ether(with platform fee)', () => {
+  //     before(async () => {
+  //       this.platformRate = 2
+  //       await this.factory.setPlatformParms(this.platform.address, 2)
 
-      this.rateBN = hre.ethers.utils.parseEther('100')
-      this.rate = this.rateBN.toString()
-      this.maxSupply = 100
+  //       this.rateBN = hre.ethers.utils.parseEther('100')
+  //       this.rate = this.rateBN.toString()
+  //       this.maxSupply = 100
 
-      this.constructorParameter = [
-        'test_name',
-        'test_symbol',
-        'https://test_url.com/',
-        hre.ethers.constants.AddressZero,
-        this.beneficiary.address,
-        this.rate,
-        this.maxSupply,
-      ]
+  //       this.constructorParameter = [
+  //         'test_name',
+  //         'test_symbol',
+  //         'https://test_url.com/',
+  //         hre.ethers.constants.AddressZero,
+  //         this.beneficiary.address,
+  //         this.rate,
+  //         this.maxSupply,
+  //       ]
 
-      const tx = await this.factory
-        .connect(this.creator)
-        .fixedPriceDeploy(...this.constructorParameter)
+  //       const tx = await this.factory
+  //         .connect(this.creator)
+  //         .fixedPriceDeploy(...this.constructorParameter)
 
-      const receipt = await tx.wait()
-      for (const event of receipt.events) {
-        switch (event.event) {
-          case 'FixedPriceDeploy': {
-            this.fixedPriceAddr = event.args[0]
-          }
-        }
-      }
+  //       const receipt = await tx.wait()
+  //       for (const event of receipt.events) {
+  //         switch (event.event) {
+  //           case 'FixedPriceDeploy': {
+  //             this.fixedPriceAddr = event.args[0]
+  //           }
+  //         }
+  //       }
 
-      this.options = {
-        value: this.rate,
-      }
-      this.shortOptions = {
-        value: (this.rateBN / 2).toString(),
-      }
+  //       this.options = {
+  //         value: this.rate,
+  //       }
+  //       this.shortOptions = {
+  //         value: (this.rateBN / 2).toString(),
+  //       }
 
-      let fixedPriceFactory = await hre.ethers.getContractFactory('FixedPrice')
+  //       let fixedPriceFactory = await hre.ethers.getContractFactory('FixedPrice')
 
-      this.fixedPrice = fixedPriceFactory.attach(this.fixedPriceAddr)
-    })
+  //       this.fixedPrice = fixedPriceFactory.attach(this.fixedPriceAddr)
+  //     })
 
-    describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
-      it('check base info', async () => {
-        expect(await this.fixedPrice.admin()).to.eq(this.creator.address)
-        expect(await this.fixedPrice.erc20()).to.eq(
-          ethers.constants.AddressZero
-        )
-        // expect(await this.fixedPrice.rate()).to.eq(
-        //   ethers.utils.parseEther(this.rate)
-        // )
-        expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
-        expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
-        expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
-      })
+  //     describe('Public Info Check: owner, erc20 Address, rate, maxSupply, platform, platformRate', () => {
+  //       it('check base info', async () => {
+  //         expect(await this.fixedPrice.owner()).to.eq(this.creator.address)
+  //         expect(await this.fixedPrice.erc20()).to.eq(
+  //           ethers.constants.AddressZero
+  //         )
+  //         // expect(await this.fixedPrice.rate()).to.eq(
+  //         //   ethers.utils.parseEther(this.rate)
+  //         // )
+  //         expect(await this.fixedPrice.maxSupply()).to.eq(this.maxSupply)
+  //         expect(await this.fixedPrice.platform()).to.eq(this.platform.address)
+  //         expect(await this.fixedPrice.platformRate()).to.eq(this.platformRate)
+  //       })
 
-      it('only owner can set baseUrl', async () => {
-        const newBaseUrl = 'https://newBaserul.com/'
-        await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
-          `AccessControl: account ${this.deployer.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
-      })
-    })
+  //       it('only owner can set baseUrl', async () => {
+  //         const newBaseUrl = 'https://newBaserul.com/'
+  //         await expect(this.fixedPrice.setBaseURI(newBaseUrl)).to.be.revertedWith(
+  //           'Ownable: caller is not the owner'
+  //         )
+  //       })
+  //     })
 
-    describe('Mint & Burn', () => {
-      it('succeeds when receive ether', async () => {
-        // user 1 mint with token id 1
-        await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user1.address, 1)
+  //     describe('Mint & Burn', () => {
+  //       it('succeeds when receive ether', async () => {
+  //         // user 1 mint with token id 1
+  //         await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
+  //           .to.emit(this.fixedPrice, 'Mint')
+  //           .withArgs(this.user1.address, 1)
 
-        //user 3 mint with token id 2
-        await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user3.address, 2)
-      })
+  //         //user 3 mint with token id 2
+  //         await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
+  //           .to.emit(this.fixedPrice, 'Mint')
+  //           .withArgs(this.user3.address, 2)
+  //       })
 
-      it('reverted when receive erc20 failed', async () => {
-        // user 2 failed
-        await expect(
-          this.fixedPrice.connect(this.user2).mintEth(),
-          this.shortOptions
-        ).to.be.reverted
-      })
+  //       it('reverted when receive erc20 failed', async () => {
+  //         // user 2 failed
+  //         await expect(
+  //           this.fixedPrice.connect(this.user2).mintEth(),
+  //           this.shortOptions
+  //         ).to.be.reverted
+  //       })
 
-      it('check beneficiary & withdraw', async () => {
-        // user 1 mint a token
-        await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user1.address, 3)
+  //       it('check beneficiary & withdraw', async () => {
+  //         // user 1 mint a token
+  //         await expect(this.fixedPrice.connect(this.user1).mintEth(this.options))
+  //           .to.emit(this.fixedPrice, 'Mint')
+  //           .withArgs(this.user1.address, 3)
 
-        await expect(
-          this.fixedPrice
-            .connect(this.user3)
-            .changeBeneficiary(this.user3.address)
-        ).to.be.revertedWith(
-          `AccessControl: account ${this.user3.address.toLowerCase()} is missing role ${
-            ethers.constants.HashZero
-          }`
-        )
+  //         await expect(
+  //           this.fixedPrice
+  //             .connect(this.user3)
+  //             .changeBeneficiary(this.user3.address)
+  //         ).to.be.revertedWith('Ownable: caller is not the owner')
 
-        await expect(this.fixedPrice.connect(this.creator).withdraw())
-          .to.emit(this.fixedPrice, 'Withdraw')
-          .withArgs(
-            this.beneficiary.address,
-            this.rateBN
-              .mul(3)
-              .mul(100 - this.platformRate)
-              .div(100)
-              .toString()
-          )
+  //         await expect(this.fixedPrice.connect(this.creator).withdraw())
+  //           .to.emit(this.fixedPrice, 'Withdraw')
+  //           .withArgs(
+  //             this.beneficiary.address,
+  //             this.rateBN
+  //               .mul(3)
+  //               .mul(100 - this.platformRate)
+  //               .div(100)
+  //               .toString()
+  //           )
 
-        //user 3 mint with token id 2
-        await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user3.address, 4)
+  //         //user 3 mint with token id 2
+  //         await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
+  //           .to.emit(this.fixedPrice, 'Mint')
+  //           .withArgs(this.user3.address, 4)
 
-        //user 3 mint with token id 3
-        await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
-          .to.emit(this.fixedPrice, 'Mint')
-          .withArgs(this.user3.address, 5)
+  //         //user 3 mint with token id 3
+  //         await expect(this.fixedPrice.connect(this.user3).mintEth(this.options))
+  //           .to.emit(this.fixedPrice, 'Mint')
+  //           .withArgs(this.user3.address, 5)
 
-        await expect(this.fixedPrice.connect(this.creator).withdraw())
-          .to.emit(this.fixedPrice, 'Withdraw')
-          .withArgs(
-            this.beneficiary.address,
-            this.rateBN
-              .mul(2)
-              .mul(100 - this.platformRate)
-              .div(100)
-              .toString()
-          )
-      })
-    })
-  })
+  //         await expect(this.fixedPrice.connect(this.creator).withdraw())
+  //           .to.emit(this.fixedPrice, 'Withdraw')
+  //           .withArgs(
+  //             this.beneficiary.address,
+  //             this.rateBN
+  //               .mul(2)
+  //               .mul(100 - this.platformRate)
+  //               .div(100)
+  //               .toString()
+  //           )
+  //       })
+  //     })
+  //   })
 })

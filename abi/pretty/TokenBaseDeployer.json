@@ -1,0 +1,7 @@
+[
+  "event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)",
+  "function deployTokenBase(string _name, string _symbol, string _bURI, address _erc20, uint256 _rate) returns (address)",
+  "function owner() view returns (address)",
+  "function renounceOwnership()",
+  "function transferOwnership(address newOwner)"
+]

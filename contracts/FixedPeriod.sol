@@ -1,39 +1,52 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./util/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-/** 
-* @dev Users pay specific erc20 tokens to purchase PASS from creator DAO in a fixed period. 
-* The price of PASS decreases linerly over time.
-* Price formular: f(x) = initialRate - solpe * x  
-* f(x) = PASS Price when current time is x + startTime
-* startTime <= x <= endTime
-*/
-contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
-  using Counters for Counters.Counter;
-  using Strings for uint256;
-  using SafeERC20 for IERC20;
+/**
+ * @dev Users pay specific erc20 tokens to purchase PASS from creator DAO in a fixed period.
+ * The price of PASS decreases linerly over time.
+ * Price formular: f(x) = initialRate - solpe * x
+ * f(x) = PASS Price when current time is x + startTime
+ * startTime <= x <= endTime
+ */
+contract FixedPeriod is
+  Initializable,
+  ContextUpgradeable,
+  OwnableUpgradeable,
+  ERC721Upgradeable,
+  ReentrancyGuardUpgradeable
+{
+  using CountersUpgradeable for CountersUpgradeable.Counter;
+  using StringsUpgradeable for uint256;
+  using SafeERC20Upgradeable for IERC20Upgradeable;
 
   event Mint(address indexed from, uint256 indexed tokenId);
   event Withdraw(address indexed to, uint256 amount);
+  event SetBaseURI(string baseURI_);
+  event ChangeBeneficiary(address _newBeneficiary);
+  event PermanentURI(string _value, uint256 indexed _id);
+  event BaseURIFrozen();
+  event ChangeBeneficiaryUnlock(uint256 cooldownStartTimestamp);
 
-  uint256 public initialRate;          // initial exchange rate of erc20 tokens/PASS
-  uint256 public startTime;            // start time of PASS sales
-  uint256 public salesValidity;        // Sales Validity in seconds
-  uint256 public endTime;              // endTime = startTime + salesValidity
-  uint256 public maxSupply;            // Maximum supply of PASS
-  uint256 public slope;                // slope = initialRate / salesValidity
-  address public admin;                // contract admin
-  address public erc20;                // erc20 token used to purchase PASS
-  address payable public platform;     // The Pass platform commission account
-  address payable public beneficiary;  // creator's beneficiary account
-  uint256 public platformRate;         // The Pass platform commission rate in pph
+  address public TIMELOCK;
+
+  bool public baseURIFrozen;
+  uint256 public initialRate; // initial exchange rate of erc20 tokens/PASS
+  uint256 public startTime; // start time of PASS sales
+  uint256 public endTime; // endTime = startTime + salesValidity
+  uint256 public maxSupply; // Maximum supply of PASS
+  uint256 public slope; // slope = initialRate / salesValidity
+  address public erc20; // erc20 token used to purchase PASS
+  address payable public platform; // The Pass platform commission account
+  address payable public receivingAddress; // creator's receivingAddress account
+  uint256 public platformRate; // The Pass platform commission rate in pph
 
   // Optional mapping for token URIs
   mapping(uint256 => string) private _tokenURIs;
@@ -42,61 +55,52 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
   string private _baseURIextended;
 
   // token id counter. For erc721 contract, PASS number = token id
-  Counters.Counter private tokenIdTracker = Counters.Counter({_value: 1});
+  CountersUpgradeable.Counter private tokenIdTracker;
 
-  constructor(
+  function initialize(
     string memory _name,
     string memory _symbol,
     string memory _bURI,
+    address _timelock,
     address _erc20,
     address payable _platform,
-    address payable _beneficiary,
+    address payable _receivingAddress,
     uint256 _initialRate,
     uint256 _startTime,
-    uint256 _salesValidity,
+    uint256 _endTime,
     uint256 _maxSupply,
     uint256 _platformRate
-  ) ERC721(_name, _symbol) {
-    _setupRole(DEFAULT_ADMIN_ROLE, tx.origin); // default contract admin is the creator
-    _setupBasicInfo(_bURI, tx.origin, _erc20, _beneficiary, _initialRate, _startTime, _salesValidity, _maxSupply);
-    _setupPlateformParm(_platform, _platformRate);
-  }
+  ) public virtual initializer {
+    __Ownable_init(_timelock);
 
-  function _setupPlateformParm(address payable _platform, uint256 _platformRate)
-    internal
-  {
+    __ERC721_init(_name, _symbol);
+    tokenIdTracker = CountersUpgradeable.Counter({_value: 1});
+
     platform = _platform;
     platformRate = _platformRate;
-  }
 
-  function _setupBasicInfo(
-    string memory _bURI,
-    address _admin,
-    address _erc20,
-    address payable _beneficiary,
-    uint256 _initialRate,
-    uint256 _startTime,
-    uint256 _salesValidity,
-    uint256 _maxSupply
-  ) internal {
     _baseURIextended = _bURI;
-    admin = _admin;
     erc20 = _erc20;
     initialRate = _initialRate;
     startTime = _startTime;
-    salesValidity = _salesValidity;
-    endTime = _startTime + _salesValidity;
-    slope = _initialRate / _salesValidity;
+    endTime = _endTime;
+    slope = _initialRate / (_endTime - _startTime);
     maxSupply = _maxSupply;
-    beneficiary = _beneficiary;
+    receivingAddress = _receivingAddress;
   }
 
   // only contract admin can set Base URI
-  function setBaseURI(string memory baseURI_)
-    public
-    onlyRole(DEFAULT_ADMIN_ROLE)
-  {
+  function setBaseURI(string memory baseURI_) public onlyOwner {
+    require(!baseURIFrozen, "baseURI has been frozen");
     _baseURIextended = baseURI_;
+    emit SetBaseURI(baseURI_);
+  }
+
+  // only contract admin can freeze Base URI
+  function freezeBaseURI() public onlyOwner {
+    require(!baseURIFrozen, "baseURI has been frozen");
+    baseURIFrozen = true;
+    emit BaseURIFrozen();
   }
 
   function _baseURI() internal view virtual override returns (string memory) {
@@ -119,13 +123,16 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     return initialRate - (slope * (block.timestamp - startTime));
   }
 
-  // only contract admin can change beneficiary account
+  // only contract admin can change receivingAddress account
   function changeBeneficiary(address payable _newBeneficiary)
     public
     nonReentrant
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
-    beneficiary = _newBeneficiary;
+    require(_newBeneficiary != address(0), "FixedPeriod: new address is zero");
+
+    receivingAddress = _newBeneficiary;
+    emit ChangeBeneficiary(_newBeneficiary);
   }
 
   function tokenURI(uint256 tokenId)
@@ -138,18 +145,13 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     require(_exists(tokenId), "URI query for nonexistent token");
 
     string memory _tokenURI = _tokenURIs[tokenId];
-    string memory base = _baseURI();
 
-    // If there is no base URI, return the token URI.
-    if (bytes(base).length == 0) {
-      return _tokenURI;
-    }
-    // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+    // If token URI exists, return the token URI.
     if (bytes(_tokenURI).length > 0) {
-      return string(abi.encodePacked(base, _tokenURI));
+      return _tokenURI;
+    } else {
+      return super.tokenURI(tokenId);
     }
-    // If there is a baseURI but no tokenURI, concatenate the tokenID to the baseURI.
-    return string(abi.encodePacked(base, tokenId.toString()));
   }
 
   function _setTokenURI(uint256 tokenId, string memory _tokenURI)
@@ -157,13 +159,18 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     virtual
   {
     require(_exists(tokenId), "URI set of nonexistent token");
+
+    string memory tokenURI_ = _tokenURIs[tokenId];
+    require(bytes(tokenURI_).length == 0, "already set TokenURI");
+
     _tokenURIs[tokenId] = _tokenURI;
+    emit PermanentURI(_tokenURI, tokenId);
   }
 
   // only contract admin can set Token URI
   function setTokenURI(uint256 tokenId, string memory _tokenURI)
     public
-    onlyRole(DEFAULT_ADMIN_ROLE)
+    onlyOwner
   {
     _setTokenURI(tokenId, _tokenURI);
   }
@@ -176,10 +183,17 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    IERC20(erc20).safeTransferFrom(_msgSender(), address(this), rate);
+    IERC20Upgradeable(erc20).safeTransferFrom(
+      _msgSender(),
+      address(this),
+      rate
+    );
 
     if (platform != address(0)) {
-      IERC20(erc20).safeTransfer(platform, (rate * platformRate) / 100);
+      IERC20Upgradeable(erc20).safeTransfer(
+        platform,
+        (rate * platformRate) / 100
+      );
     }
 
     _safeMint(_msgSender(), tokenId); // mint PASS to user address
@@ -204,30 +218,32 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
 
     tokenId = tokenIdTracker.current(); // accumulate the token id
 
-    _safeMint(_msgSender(), tokenId);   // mint PASS to user address
+    _safeMint(_msgSender(), tokenId); // mint PASS to user address
     emit Mint(_msgSender(), tokenId);
 
     if (platform != address(0)) {
-      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}("");
+      (bool success, ) = platform.call{value: (rate * (platformRate)) / 100}(
+        ""
+      );
       require(success, "Failed to send Ether");
     }
 
     tokenIdTracker.increment(); // automate token id increment
   }
 
-  // anyone can withdraw reserve of erc20 tokens/ETH to creator's beneficiary account
+  // anyone can withdraw reserve of erc20 tokens/ETH to creator's receivingAddress account
   function withdraw() public nonReentrant {
     if (address(erc20) == address(0)) {
       uint256 amount = _getBalance();
-      (bool success, ) = beneficiary.call{value: amount}("");  // withdraw ETH to beneficiary account
+      (bool success, ) = receivingAddress.call{value: amount}(""); // withdraw ETH to receivingAddress account
       require(success, "Failed to send Ether");
 
-      emit Withdraw(beneficiary, amount);
+      emit Withdraw(receivingAddress, amount);
     } else {
-      uint256 amount = IERC20(erc20).balanceOf(address(this));
-      IERC20(erc20).safeTransfer(beneficiary, amount);         // withdraw erc20 tokens to beneficiary account
+      uint256 amount = IERC20Upgradeable(erc20).balanceOf(address(this));
+      IERC20Upgradeable(erc20).safeTransfer(receivingAddress, amount); // withdraw erc20 tokens to receivingAddress account
 
-      emit Withdraw(beneficiary, amount);
+      emit Withdraw(receivingAddress, amount);
     }
   }
 
@@ -235,8 +251,9 @@ contract FixedPeriod is Context, AccessControl, ERC721, ReentrancyGuard {
     public
     view
     virtual
-    override(AccessControl, ERC721)
-    returns (bool){
+    override(ERC721Upgradeable)
+    returns (bool)
+  {
     return super.supportsInterface(interfaceId);
   }
 }

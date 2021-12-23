@@ -29,21 +29,24 @@ async function main() {
 
   console.log('TokenBaseDeployer address: ' + tokenBaseDeployer.address)
   console.log('NFTBaseDeployer address: ' + nftBaseDeployer.address)
-  console.log(
-    'FixedPeriodDeployer address: ' + fixedPeriodDeployer.address
-  )
-  console.log(
-    'FixedPriceDeployer address: ' + fixedPriceDeployer.address
-  )
+  console.log('FixedPeriodDeployer address: ' + fixedPeriodDeployer.address)
+  console.log('FixedPriceDeployer address: ' + fixedPriceDeployer.address)
 
-  // Deploy Factory
-  const Factory = await hre.ethers.getContractFactory('Factory')
-  const factory = await Factory.deploy(
+  const platformAddr = '0x98a6a913a8d51ac1235a6fec2ba74eb0ab80f772'
+  const platformRate = 2
+
+  const constructorParameter = [
     tokenBaseDeployer.address,
     nftBaseDeployer.address,
     fixedPeriodDeployer.address,
-    fixedPriceDeployer.address
-  )
+    fixedPriceDeployer.address,
+    platformAddr,
+    platformRate,
+  ]
+
+  // Deploy Factory
+  const Factory = await hre.ethers.getContractFactory('Factory')
+  const factory = await Factory.deploy(...constructorParameter)
   await factory.deployed()
   console.log('Factory address: ' + factory.address)
 }
